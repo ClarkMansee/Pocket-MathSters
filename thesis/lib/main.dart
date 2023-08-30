@@ -114,19 +114,37 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  List<int> _usedQuestionIndices = [];
+
   void _initializeOptions() {
-    if (_easyDifficulties.isNotEmpty &&
-        _easyDifficulties[_currentEasyQuestionIndex].isNotEmpty) {
-      List<List<String>> questionData =
-          _easyDifficulties[_currentEasyQuestionIndex];
-
-      // Extract answer options from sublists starting from index 1
-      _options = List.from(questionData.sublist(1));
-
-      _options = _shuffleList(_options);
-    } else {
-      _options = []; // Handle the case when data is not available
+    if (_easyDifficulties.isEmpty) {
+      // Handle the case when there are no questions
+      _options = [];
+      return;
     }
+
+    if (_easyDifficulties.length == _usedQuestionIndices.length) {
+      _usedQuestionIndices
+          .clear(); // Clear used indices if all questions have been used
+    }
+
+    int newIndex;
+
+    do {
+      newIndex = _getRandomIndex(_easyDifficulties);
+    } while (_usedQuestionIndices.contains(newIndex));
+
+    _usedQuestionIndices.add(newIndex);
+    _currentEasyQuestionIndex = newIndex;
+
+    List<List<String>> questionData =
+        _easyDifficulties[_currentEasyQuestionIndex];
+
+    // Extract answer options from sublists starting from index 1
+    _options = List.from(questionData.sublist(1));
+    _options = _shuffleList(_options);
+
+    print(_usedQuestionIndices);
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
@@ -142,6 +160,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _optionClicked(List<String> selectedOption) {
     print(selectedOption[0]);
+    _updateCounter(int.parse(selectedOption[1]));
+
+    setState(() {
+      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+      _initializeOptions();
+    });
   }
 
   @override
