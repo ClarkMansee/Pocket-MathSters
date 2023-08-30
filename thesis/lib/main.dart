@@ -1,6 +1,7 @@
 import 'dart:async' show Future;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:thesis/splash.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const Splash(),
     );
   }
 }
@@ -61,11 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
     for (int i = 0; i < lines.length; i++) {
       String line = lines[i];
 
-      if (line == 'Easy') {
+      if (line.trim() == 'Easy') {
         currentDifficultyData = easy;
-      } else if (line == 'Medium') {
+      } else if (line.trim() == 'Medium') {
         currentDifficultyData = medium;
-      } else if (line == 'Hard') {
+      } else if (line.trim() == 'Hard') {
         currentDifficultyData = hard;
       } else if (line.isNotEmpty) {
         List<String> elements = line
@@ -82,8 +83,8 @@ class _MyHomePageState extends State<MyHomePage> {
         currentDifficultyData.add(questionData);
       }
     }
-    
-        print(currentDifficultyData[2][0][0]);
+
+    print(currentDifficultyData[2][0][0]);
 
     // Assigning the data to your class variables
     _easyDifficulties = easy;
