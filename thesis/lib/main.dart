@@ -1,7 +1,7 @@
 import 'dart:async' show Future;
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:thesis/splash.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const Splash(),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
@@ -42,6 +42,10 @@ class _MyHomePageState extends State<MyHomePage> {
   List<List<List<String>>> _easyDifficulties = [];
   List<List<List<String>>> _mediumDifficulties = [];
   List<List<List<String>>> _hardDifficulties = [];
+
+  List<List<String>> _options = [];
+
+  int _currentEasyQuestionIndex = 0;
 
   @override
   void initState() {
@@ -84,19 +88,19 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
 
-    print(currentDifficultyData[2][0][0]);
-
-    // Assigning the data to your class variables
     _easyDifficulties = easy;
     _mediumDifficulties = medium;
     _hardDifficulties = hard;
 
-    // Printing the result for verification
-    print("Easy: $_easyDifficulties");
-    print("Medium: $_mediumDifficulties");
-    print("Hard: $_hardDifficulties");
+    setState(() {
+      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+      print(_currentEasyQuestionIndex);
+      _initializeOptions();
+    });
+  }
 
-    setState(() {});
+  int _getRandomIndex(List<List<List<String>>> difficultyData) {
+    return Random().nextInt(difficultyData.length);
   }
 
   void _updateCounter(int value) {
@@ -109,6 +113,39 @@ class _MyHomePageState extends State<MyHomePage> {
         _enemyHP -= value;
       });
     }
+  }
+
+  void _initializeOptions() {
+    if (_easyDifficulties.isNotEmpty &&
+        _easyDifficulties[_currentEasyQuestionIndex].isNotEmpty) {
+      List<List<String>> questionData =
+          _easyDifficulties[_currentEasyQuestionIndex];
+
+      // Extract answer options from sublists starting from index 1
+      _options = List.from(questionData.sublist(1));
+
+    print("preshuffle: $_options");
+      _options = _shuffleList(_options);
+      
+    } else {
+      _options = []; // Handle the case when data is not available
+    }
+    print("postshuffle: $_options");
+  }
+
+  List<List<String>> _shuffleList(List<List<String>> list) {
+    var random = Random();
+    for (var i = list.length - 1; i > 0; i--) {
+      var j = random.nextInt(i + 1);
+      var temp = list[i];
+      list[i] = list[j];
+      list[j] = temp;
+    }
+    return list;
+  }
+
+  void _optionClicked(List<String> selectedOption) {
+    print(selectedOption[0]);
   }
 
   @override
@@ -124,8 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Text(
               _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
-                  ? _easyDifficulties[0][0]
-                      [0] // Display the first "question" string
+                  ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
                   : 'No question available',
             ),
             Text(
@@ -139,8 +175,23 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_playerHP / 200',
               style: Theme.of(context).textTheme.headline6,
             ),
+            ElevatedButton(
+              onPressed: () => _optionClicked(_options[0]),
+              child: Text(_options[0][0]),
+            ),
+            // ElevatedButton(
+            //   onPressed: () => _optionClicked(_options[1]),
+            //   child: Text(_options[1][0]),
+            // ),
+            // ElevatedButton(
+            //   onPressed: () => _optionClicked(_options[2]),
+            //   child: Text(_options[2][0]),
+            // ),
+            // ElevatedButton(
+            //   onPressed: () => _optionClicked(_options[3]),
+            //   child: Text(_options[3][0]),
+            // ),
             SizedBox(height: 20),
-            // Rest of your code
           ],
         ),
       ),
