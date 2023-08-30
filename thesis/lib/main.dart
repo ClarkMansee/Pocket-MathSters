@@ -94,7 +94,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
-      print(_currentEasyQuestionIndex);
       _initializeOptions();
     });
   }
@@ -124,13 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Extract answer options from sublists starting from index 1
       _options = List.from(questionData.sublist(1));
 
-    print("preshuffle: $_options");
       _options = _shuffleList(_options);
-      
     } else {
       _options = []; // Handle the case when data is not available
     }
-    print("postshuffle: $_options");
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
@@ -150,51 +146,59 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
-                  ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
-                  : 'No question available',
-            ),
-            Text(
-              '$_enemyHP / 200',
-              style: Theme.of(context).textTheme.headline6,
-            ),
-            const Text(
-              'Player',
-            ),
-            Text(
-              '$_playerHP / 200',
-              style: Theme.of(context).textTheme.headline6,
-            ),
-            ElevatedButton(
-              onPressed: () => _optionClicked(_options[0]),
-              child: Text(_options[0][0]),
-            ),
-            // ElevatedButton(
-            //   onPressed: () => _optionClicked(_options[1]),
-            //   child: Text(_options[1][0]),
-            // ),
-            // ElevatedButton(
-            //   onPressed: () => _optionClicked(_options[2]),
-            //   child: Text(_options[2][0]),
-            // ),
-            // ElevatedButton(
-            //   onPressed: () => _optionClicked(_options[3]),
-            //   child: Text(_options[3][0]),
-            // ),
-            SizedBox(height: 20),
-          ],
+    if (_options.isEmpty) {
+      return CircularProgressIndicator(); // Display loading indicator
+    } else {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
         ),
-      ),
-    );
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
+                    ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
+                    : 'No question available',
+              ),
+              Text(
+                '$_enemyHP / 200',
+                style: Theme.of(context).textTheme.headline6,
+              ),
+              const Text(
+                'Player',
+              ),
+              Text(
+                '$_playerHP / 200',
+                style: Theme.of(context).textTheme.headline6,
+              ),
+              Column(children: <Widget>[
+                ElevatedButton(
+                  onPressed: () => _optionClicked(_options[0]),
+                  child: Text(_options[0][0]),
+                ),
+                ElevatedButton(
+                  onPressed: () => _optionClicked(_options[1]),
+                  child: Text(_options[1][0]),
+                )
+              ]),
+              Column(children: <Widget>[
+                ElevatedButton(
+                  onPressed: () => _optionClicked(_options[2]),
+                  child: Text(_options[2][0]),
+                ),
+                ElevatedButton(
+                  onPressed: () => _optionClicked(_options[3]),
+                  child: Text(_options[3][0]),
+                ),
+              ]),
+              SizedBox(height: 20),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }
