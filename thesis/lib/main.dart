@@ -46,10 +46,12 @@ class _MyHomePageState extends State<MyHomePage> {
   List<List<String>> _options = [];
 
   int _currentEasyQuestionIndex = 0;
+  int _correctAnswerCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _correctAnswerCount = 0;
     _loadData(); // Load data when the widget is initialized
   }
 
@@ -144,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _options = List.from(questionData.sublist(1));
     _options = _shuffleList(_options);
 
-    print(_usedQuestionIndices);
+    // print(_usedQuestionIndices);
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
@@ -159,8 +161,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _optionClicked(List<String> selectedOption) {
-    print(selectedOption[0]);
     _updateCounter(int.parse(selectedOption[1]));
+
+    if (selectedOption[2].trim() == '1') {
+      // If the selected answer is correct, increment correct answer counter
+      _correctAnswerCount++;
+    }
+
+    print("\nCorrect Answers: $_correctAnswerCount");
+    print("Chose: ${selectedOption[0]}");
 
     setState(() {
       _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
@@ -186,6 +195,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
                     ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
                     : 'No question available',
+              ),
+              const Text(
+                'Enemy',
               ),
               Text(
                 '$_enemyHP / 200',
