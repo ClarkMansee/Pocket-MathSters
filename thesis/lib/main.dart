@@ -102,11 +102,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  @override
-  void dispose() {
-    _saveDataToFile(); // Save data when the app is closed
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _saveDataToFile(); // Save data when the app is closed
+  //   super.dispose();
+  // }
 
   Future<void> _saveDataToFile() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -115,6 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       // Create or modify the "saveData.txt" file
       await file.writeAsString('Correct Answers: $_correctAnswerCount');
+      print('Data saved to file successfully');
     } catch (e) {
       print('Error saving data to file: $e');
     }
@@ -211,6 +212,13 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+
+              ElevatedButton(
+                onPressed:
+                    _saveDataToFile, // Call _saveDataToFile when the button is pressed
+                child: Text('Save Data'),
+              ),
+
               Text(
                 _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
                     ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
