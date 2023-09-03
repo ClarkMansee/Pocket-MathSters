@@ -2,6 +2,8 @@ import 'dart:async' show Future;
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart'; // Import path_provider
+import 'dart:io'; // Import dart:io to work with File class
 
 void main() {
   runApp(const MyApp());
@@ -98,6 +100,24 @@ class _MyHomePageState extends State<MyHomePage> {
       _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
       _initializeOptions();
     });
+  }
+
+  @override
+  void dispose() {
+    _saveDataToFile(); // Save data when the app is closed
+    super.dispose();
+  }
+
+  Future<void> _saveDataToFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/saveData.txt');
+
+    try {
+      // Create or modify the "saveData.txt" file
+      await file.writeAsString('Correct Answers: $_correctAnswerCount');
+    } catch (e) {
+      print('Error saving data to file: $e');
+    }
   }
 
   int _getRandomIndex(List<List<List<String>>> difficultyData) {
