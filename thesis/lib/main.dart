@@ -109,17 +109,21 @@ class _MyHomePageState extends State<MyHomePage> {
   // }
 
   Future<void> _saveDataToFile() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/saveData.txt');
+  final directory = await getApplicationDocumentsDirectory();
+  final file = File('${directory.path}/saveData.txt');
 
-    try {
-      // Create or modify the "saveData.txt" file
-      await file.writeAsString('Correct Answers: $_correctAnswerCount');
-      print('Data saved to file successfully');
-    } catch (e) {
-      print('Error saving data to file: $e');
-    }
+  try {
+    // Create or modify the "saveData.txt" file
+    await file.writeAsString('Correct Answers: $_correctAnswerCount');
+    print('Data saved to file successfully');
+
+    // Read and print the content of the file
+    final savedData = await file.readAsString();
+    print('Content of saveData.txt: $savedData');
+  } catch (e) {
+    print('Error saving data to file: $e');
   }
+}
 
   int _getRandomIndex(List<List<List<String>>> difficultyData) {
     return Random().nextInt(difficultyData.length);
@@ -212,13 +216,11 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-
               ElevatedButton(
                 onPressed:
                     _saveDataToFile, // Call _saveDataToFile when the button is pressed
                 child: Text('Save Data'),
               ),
-
               Text(
                 _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
                     ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
