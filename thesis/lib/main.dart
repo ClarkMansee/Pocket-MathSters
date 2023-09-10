@@ -1,26 +1,35 @@
 import 'dart:async' show Future;
 import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart'; // Import path_provider
-import 'dart:io'; // Import dart:io to work with File class
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+
+import 'package:thesis/splash.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key});
 
   @override
   Widget build(BuildContext context) {
+    //Landscape orientation
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(
+        title: 'Pocket MathSters',
+      ),
     );
   }
 }
@@ -102,28 +111,20 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // @override
-  // void dispose() {
-  //   _saveDataToFile(); // Save data when the app is closed
-  //   super.dispose();
-  // }
-
   Future<void> _saveDataToFile() async {
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File('${directory.path}/saveData.txt');
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/saveData.txt');
 
-  try {
-    // Create or modify the "saveData.txt" file
-    await file.writeAsString('Correct Answers: $_correctAnswerCount');
-    print('Data saved to file successfully');
+    try {
+      await file.writeAsString('Correct Answers: $_correctAnswerCount');
+      print('Data saved to file successfully');
 
-    // Read and print the content of the file
-    final savedData = await file.readAsString();
-    print('Content of saveData.txt: $savedData');
-  } catch (e) {
-    print('Error saving data to file: $e');
+      final savedData = await file.readAsString();
+      print('Content of saveData.txt: $savedData');
+    } catch (e) {
+      print('Error saving data to file: $e');
+    }
   }
-}
 
   int _getRandomIndex(List<List<List<String>>> difficultyData) {
     return Random().nextInt(difficultyData.length);
@@ -145,14 +146,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _initializeOptions() {
     if (_easyDifficulties.isEmpty) {
-      // Handle the case when there are no questions
       _options = [];
       return;
     }
 
     if (_easyDifficulties.length == _usedQuestionIndices.length) {
-      _usedQuestionIndices
-          .clear(); // Clear used indices if all questions have been used
+      _usedQuestionIndices.clear();
     }
 
     int newIndex;
@@ -167,11 +166,8 @@ class _MyHomePageState extends State<MyHomePage> {
     List<List<String>> questionData =
         _easyDifficulties[_currentEasyQuestionIndex];
 
-    // Extract answer options from sublists starting from index 1
     _options = List.from(questionData.sublist(1));
     _options = _shuffleList(_options);
-
-    // print(_usedQuestionIndices);
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
@@ -189,7 +185,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _updateCounter(int.parse(selectedOption[1]));
 
     if (selectedOption[2].trim() == '1') {
-      // If the selected answer is correct, increment correct answer counter
       _correctAnswerCount++;
     }
 
@@ -204,67 +199,210 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_options.isEmpty) {
-      return CircularProgressIndicator(); // Display loading indicator
-    } else {
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/Normal_BG.png"),
+            fit: BoxFit.cover,
+          ),
         ),
-        body: Center(
+        child: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              ElevatedButton(
-                onPressed:
-                    _saveDataToFile, // Call _saveDataToFile when the button is pressed
-                child: Text('Save Data'),
-              ),
-              Text(
-                _easyDifficulties.isNotEmpty && _easyDifficulties[0].isNotEmpty
-                    ? _easyDifficulties[_currentEasyQuestionIndex][0][0]
-                    : 'No question available',
-              ),
-              const Text(
-                'Enemy',
-              ),
-              Text(
-                '$_enemyHP / 200',
-                style: Theme.of(context).textTheme.headline6,
-              ),
-              const Text(
-                'Player',
-              ),
-              Text(
-                '$_playerHP / 200',
-                style: Theme.of(context).textTheme.headline6,
-              ),
-              Column(children: <Widget>[
-                ElevatedButton(
-                  onPressed: () => _optionClicked(_options[0]),
-                  child: Text(_options[0][0]),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            'assets/HP_Banner.png',
+                            fit: BoxFit.cover,
+                          ),
+                          Center(
+                            child: Text(
+                              '$_enemyHP / 200',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2.0,
+                                ),
+                              ),
+                              margin: const EdgeInsets.all(10.0),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _easyDifficulties.isNotEmpty &&
+                                        _easyDifficulties[0].isNotEmpty
+                                    ? _easyDifficulties[
+                                        _currentEasyQuestionIndex][0][0]
+                                    : 'No question available',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: () => _optionClicked(_options[1]),
-                  child: Text(_options[1][0]),
-                )
-              ]),
-              Column(children: <Widget>[
-                ElevatedButton(
-                  onPressed: () => _optionClicked(_options[2]),
-                  child: Text(_options[2][0]),
+              ),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        margin: EdgeInsets.only(left: 150.0),
+                        child: Image.asset(
+                          'assets/Inswinerator_Front.png',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: () => _optionClicked(_options[3]),
-                  child: Text(_options[3][0]),
+              ),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Image.asset(
+                              'assets/Trunks_Back.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(
+                              left: 100.0,
+                              top: 20.0,
+                            ),
+                            child: Image.asset(
+                              'assets/HP_Banner.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Center(
+                            child: Text(
+                              '$_playerHP / 200',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ]),
-              SizedBox(height: 20),
+              ),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // ElevatedButton(
+                          //   onPressed: _saveDataToFile,
+                          //   style: ElevatedButton.styleFrom(
+                          //     onPrimary: Colors.black,
+                          //   ),
+                          //   child: const Text(
+                          //     'Save Data',
+                          //   ),
+                          // ),
+                          ElevatedButton(
+                            onPressed: () => _optionClicked(_options[0]),
+                            style: ElevatedButton.styleFrom(
+                              onPrimary: Colors.black,
+                            ),
+                            child: Text(_options[0][0]),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _optionClicked(_options[1]),
+                            style: ElevatedButton.styleFrom(
+                              onPrimary: Colors.black,
+                            ),
+                            child: Text(_options[1][0]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _optionClicked(_options[2]),
+                            style: ElevatedButton.styleFrom(
+                              onPrimary: Colors.black,
+                            ),
+                            child: Text(_options[2][0]),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _optionClicked(_options[3]),
+                            style: ElevatedButton.styleFrom(
+                              onPrimary: Colors.black,
+                            ),
+                            child: Text(_options[3][0]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Add your button functionality here
+                      },
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.orange,
+                        onPrimary: Colors.black,
+                      ),
+                      child: const Text(
+                        'CONFIRM?',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 }
