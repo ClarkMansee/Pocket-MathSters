@@ -50,6 +50,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _enemyHP = 20;
   int _playerHP = 20;
+  int _levelNum = 0; // New variable to keep track of the level
+
   List<List<List<String>>> _easyDifficulties = [];
   List<List<List<String>>> _mediumDifficulties = [];
   List<List<List<String>>> _hardDifficulties = [];
@@ -133,13 +135,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _updateCounter(int value) {
     if (value < 0) {
-      setState(() {
-        _playerHP += value;
-      });
+      if (_playerHP - value > 0) {
+        setState(() {
+          _playerHP += value;
+        });
+      } else {
+        setState(() {
+          _playerHP = 0;
+        });
+      }
     } else {
-      setState(() {
-        _enemyHP -= value;
-      });
+      if (_enemyHP - value > 0) {
+        setState(() {
+          _enemyHP -= value;
+        });
+      } else {
+        setState(() {
+          _enemyHP = 0;
+        });
+      }
     }
   }
 
@@ -197,6 +211,17 @@ class _MyHomePageState extends State<MyHomePage> {
       print("\nCorrect Answers: $_correctAnswerCount");
       print("Chose: ${_selectedOption![0]}");
       _selectedOption = null; // Reset selected option
+
+      if (_playerHP <= 0 || _enemyHP <= 0) {
+        // Check if either player or enemy HP is 0 or less
+        setState(() {
+          _levelNum++; // Increment level
+          _playerHP = 20; // Reset player HP
+          _enemyHP = 20; // Reset enemy HP
+        });
+      }
+
+      print("Current Level: ${_levelNum+1}");
 
       setState(() {
         _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
