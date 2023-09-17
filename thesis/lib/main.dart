@@ -55,6 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<List<List<String>>> _hardDifficulties = [];
 
   List<List<String>> _options = [];
+  List<String>? _selectedOption;
 
   int _currentEasyQuestionIndex = 0;
   int _correctAnswerCount = 0;
@@ -182,19 +183,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _optionClicked(List<String> selectedOption) {
-    _updateCounter(int.parse(selectedOption[1]));
-
-    if (selectedOption[2].trim() == '1') {
-      _correctAnswerCount++;
-    }
-
-    print("\nCorrect Answers: $_correctAnswerCount");
-    print("Chose: ${selectedOption[0]}");
-
     setState(() {
-      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
-      _initializeOptions();
+      _selectedOption = List.from(selectedOption); // Store selected option
     });
+
+    print("Current Selected Option: $_selectedOption");
+  }
+
+  void _confirmAnswer() {
+    if (_selectedOption != null) {
+      _updateCounter(int.parse(
+          _selectedOption![1])); // Update counter using selected option
+      print("\nCorrect Answers: $_correctAnswerCount");
+      print("Chose: ${_selectedOption![0]}");
+      _selectedOption = null; // Reset selected option
+
+      setState(() {
+        _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+        _initializeOptions();
+      });
+    } else {
+      print("No option has been selected");
+    }
   }
 
   @override
@@ -385,9 +395,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        // Add your button functionality here
-                      },
+                      onPressed: _confirmAnswer,
                       style: ElevatedButton.styleFrom(
                         primary: Colors.orange,
                         onPrimary: Colors.black,
