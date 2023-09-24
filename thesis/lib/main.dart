@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //Landscape orientation
+    // Landscape orientation
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
@@ -61,6 +61,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _currentEasyQuestionIndex = 0;
   int _correctAnswerCount = 0;
+
+//Initial Values
+  String _currentEnemyAssetPath = "Inswinerator_Front.png";
+  String _currentBackground = "Normal_BG.png";
+  String _currentEnemyLevel = "Normal Enemy 1";
+  String _currentEnemyHP = "100";
 
   @override
   void initState() {
@@ -218,10 +224,59 @@ class _MyHomePageState extends State<MyHomePage> {
           _levelNum++; // Increment level
           _playerHP = 20; // Reset player HP
           _enemyHP = 20; // Reset enemy HP
+
+          // Define an array of level data where each element is a list
+          List<List<String>> levelData = [
+            [
+              '0',
+              'Normal_BG.png',
+              'Inswinerator_Front.png',
+              'Normal Enemy 1',
+              '100'
+            ],
+            ['1', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 2', '100'],
+            ['2', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 3', '100'],
+            ['3', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 1', '150'],
+            [
+              '4',
+              'Normal_BG.png',
+              'Inswinerator_Front.png',
+              'Normal Enemy 4',
+              '100'
+            ],
+            ['5', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 5', '100'],
+            ['6', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 6', '100'],
+            ['7', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 2', '150'],
+            [
+              '8',
+              'Normal_BG.png',
+              'Inswinerator_Front.png',
+              'Normal Enemy 7',
+              '100'
+            ],
+            ['9', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 8', '100'],
+            ['10', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 9', '100'],
+            ['11', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 3', '150'],
+            ['12', 'FinalBoss_BG.png', 'Ichig_Front.png', 'Final Boss', '200'],
+            // Add more levels as needed
+          ];
+
+          if (_levelNum < levelData.length) {
+            // Check if _levelNum is within the bounds of levelData
+            List<String> currentLevelData = levelData[_levelNum];
+            _levelNum = int.parse(currentLevelData[0]);
+            _currentBackground = currentLevelData[1];
+            _currentEnemyAssetPath = currentLevelData[2];
+            _currentEnemyLevel = currentLevelData[3];
+            _currentEnemyHP = currentLevelData[4];
+          } else {
+            // Handle cases beyond the length of levelData
+            // (e.g., you can set default values or handle it as needed)
+          }
         });
       }
 
-      print("Current Level: ${_levelNum+1}");
+      print("Current Level: ${_levelNum + 1}");
 
       setState(() {
         _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
@@ -232,13 +287,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  //-------------Layout part of the code----------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("assets/Normal_BG.png"),
+            image: AssetImage("assets/$_currentBackground"),
             fit: BoxFit.cover,
           ),
         ),
@@ -258,14 +314,30 @@ class _MyHomePageState extends State<MyHomePage> {
                             'assets/HP_Banner.png',
                             fit: BoxFit.cover,
                           ),
-                          Center(
-                            child: Text(
-                              '$_enemyHP / 200',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 20,
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 50.0),
+                                  child: Text(
+                                    _currentEnemyLevel,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              Text(
+                                '$_enemyHP / 200',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -313,7 +385,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Container(
                         margin: EdgeInsets.only(left: 150.0),
                         child: Image.asset(
-                          'assets/Inswinerator_Front.png',
+                          "assets/$_currentEnemyAssetPath", // Use the current image path
                         ),
                       ),
                     ),
@@ -342,21 +414,40 @@ class _MyHomePageState extends State<MyHomePage> {
                           Container(
                             margin: const EdgeInsets.only(
                               left: 100.0,
-                              top: 20.0,
+                              top: 5,
                             ),
                             child: Image.asset(
                               'assets/HP_Banner.png',
                               fit: BoxFit.cover,
                             ),
                           ),
-                          Center(
-                            child: Text(
-                              '$_playerHP / 200',
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontSize: 20,
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Align(
+                                alignment: Alignment.center,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 0.0),
+                                  child: Text(
+                                    'Player',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 100.0),
+                                child: Text(
+                                  '$_playerHP / 200',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -372,15 +463,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ElevatedButton(
-                          //   onPressed: _saveDataToFile,
-                          //   style: ElevatedButton.styleFrom(
-                          //     onPrimary: Colors.black,
-                          //   ),
-                          //   child: const Text(
-                          //     'Save Data',
-                          //   ),
-                          // ),
                           ElevatedButton(
                             onPressed: () => _optionClicked(_options[0]),
                             style: ElevatedButton.styleFrom(
