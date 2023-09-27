@@ -48,8 +48,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _enemyHP = 20;
-  int _playerHP = 20;
+  int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
 
   List<List<List<String>>> _easyDifficulties = [];
@@ -63,10 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
   int _correctAnswerCount = 0;
 
 //Initial Values
-  String _currentEnemyAssetPath = "Inswinerator_Front.png";
+  String _currentEnemyAssetPath = "Kudango.png";
   String _currentBackground = "Normal_BG.png";
   String _currentEnemyLevel = "Normal Enemy 1";
-  String _currentEnemyHP = "100";
+  int _currentEnemyHP = 100;
+  int _totalEnemyHP = 100;
 
   @override
   void initState() {
@@ -151,13 +151,13 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     } else {
-      if (_enemyHP - value > 0) {
+      if (_currentEnemyHP - value > 0) {
         setState(() {
-          _enemyHP -= value;
+          _currentEnemyHP -= value;
         });
       } else {
         setState(() {
-          _enemyHP = 0;
+          _currentEnemyHP = 0;
         });
       }
     }
@@ -218,45 +218,29 @@ class _MyHomePageState extends State<MyHomePage> {
       print("Chose: ${_selectedOption![0]}");
       _selectedOption = null; // Reset selected option
 
-      if (_playerHP <= 0 || _enemyHP <= 0) {
+      if (_playerHP <= 0 || _currentEnemyHP <= 0) {
         // Check if either player or enemy HP is 0 or less
         setState(() {
           _levelNum++; // Increment level
-          _playerHP = 20; // Reset player HP
-          _enemyHP = 20; // Reset enemy HP
+          _playerHP = 100; // Reset player HP
 
           // Define an array of level data where each element is a list
           List<List<String>> levelData = [
-            [
-              '0',
-              'Normal_BG.png',
-              'Inswinerator_Front.png',
-              'Normal Enemy 1',
-              '100'
-            ],
-            ['1', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 2', '100'],
-            ['2', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 3', '100'],
-            ['3', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 1', '150'],
-            [
-              '4',
-              'Normal_BG.png',
-              'Inswinerator_Front.png',
-              'Normal Enemy 4',
-              '100'
-            ],
-            ['5', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 5', '100'],
-            ['6', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 6', '100'],
-            ['7', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 2', '150'],
-            [
-              '8',
-              'Normal_BG.png',
-              'Inswinerator_Front.png',
-              'Normal Enemy 7',
-              '100'
-            ],
-            ['9', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 8', '100'],
-            ['10', 'Normal_BG.png', 'Ichig_Front.png', 'Normal Enemy 9', '100'],
-            ['11', 'MiniBoss_BG.png', 'Ichig_Front.png', 'Mini Boss 3', '150'],
+            //Level 1
+            ['0', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 1', '100'],
+            ['1', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 2', '100'],
+            ['2', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 3', '100'],
+            ['3', 'MiniBoss_BG.png', 'Autognawta.png', 'Mini Boss 1', '150'],
+            //Level 2
+            ['4', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 4', '100'],
+            ['5', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 5', '100'],
+            ['6', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 6', '100'],
+            ['7', 'MiniBoss_BG.png', 'Norxnor.png', 'Mini Boss 2', '150'],
+            //Level 3
+            ['8', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 7', '100'],
+            ['9', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 8', '100'],
+            ['10', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 9', '100'],
+            ['11', 'MiniBoss_BG.png', 'Buffine.png', 'Mini Boss 3', '150'],
             ['12', 'FinalBoss_BG.png', 'Ichig_Front.png', 'Final Boss', '200'],
             // Add more levels as needed
           ];
@@ -268,7 +252,8 @@ class _MyHomePageState extends State<MyHomePage> {
             _currentBackground = currentLevelData[1];
             _currentEnemyAssetPath = currentLevelData[2];
             _currentEnemyLevel = currentLevelData[3];
-            _currentEnemyHP = currentLevelData[4];
+            _currentEnemyHP = int.parse(currentLevelData[4]);
+            _totalEnemyHP = int.parse(currentLevelData[4]);
           } else {
             // Handle cases beyond the length of levelData
             // (e.g., you can set default values or handle it as needed)
@@ -326,13 +311,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
+                                      fontFamily: 'Silkscreen',
                                     ),
                                   ),
                                 ),
                               ),
                               Text(
-                                '$_enemyHP / 200',
+                                '$_currentEnemyHP / $_totalEnemyHP',
                                 style: TextStyle(
+                                  fontFamily: 'Silkscreen',
                                   color: Colors.red,
                                   fontSize: 20,
                                 ),
@@ -367,6 +354,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 20,
+                                  fontFamily: 'Silkscreen',
                                 ),
                               ),
                             ),
@@ -433,6 +421,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
+                                      fontFamily: 'Silkscreen',
                                     ),
                                   ),
                                 ),
@@ -440,10 +429,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               Padding(
                                 padding: const EdgeInsets.only(left: 100.0),
                                 child: Text(
-                                  '$_playerHP / 200',
+                                  '$_playerHP /  100',
                                   style: TextStyle(
                                     color: Colors.green,
                                     fontSize: 20,
+                                    fontFamily: 'Silkscreen',
                                   ),
                                 ),
                               ),
@@ -468,14 +458,24 @@ class _MyHomePageState extends State<MyHomePage> {
                             style: ElevatedButton.styleFrom(
                               onPrimary: Colors.black,
                             ),
-                            child: Text(_options[0][0]),
+                            child: Text(
+                              _options[0][0],
+                              style: TextStyle(
+                                fontFamily: 'Silkscreen',
+                              ),
+                            ),
                           ),
                           ElevatedButton(
                             onPressed: () => _optionClicked(_options[1]),
                             style: ElevatedButton.styleFrom(
                               onPrimary: Colors.black,
                             ),
-                            child: Text(_options[1][0]),
+                            child: Text(
+                              _options[1][0],
+                              style: TextStyle(
+                                fontFamily: 'Silkscreen',
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -489,14 +489,24 @@ class _MyHomePageState extends State<MyHomePage> {
                             style: ElevatedButton.styleFrom(
                               onPrimary: Colors.black,
                             ),
-                            child: Text(_options[2][0]),
+                            child: Text(
+                              _options[2][0],
+                              style: TextStyle(
+                                fontFamily: 'Silkscreen',
+                              ),
+                            ),
                           ),
                           ElevatedButton(
                             onPressed: () => _optionClicked(_options[3]),
                             style: ElevatedButton.styleFrom(
                               onPrimary: Colors.black,
                             ),
-                            child: Text(_options[3][0]),
+                            child: Text(
+                              _options[3][0],
+                              style: TextStyle(
+                                fontFamily: 'Silkscreen',
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -509,6 +519,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       child: const Text(
                         'CONFIRM?',
+                        style: TextStyle(
+                          fontFamily: 'Silkscreen',
+                        ),
                       ),
                     ),
                   ],
