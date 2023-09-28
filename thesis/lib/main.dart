@@ -65,8 +65,10 @@ class _MyHomePageState extends State<MyHomePage> {
   String _currentEnemyAssetPath = "Kudango.png";
   String _currentBackground = "Normal_BG.png";
   String _currentEnemyLevel = "Normal Enemy 1";
+  String _EnemyHurt = "Kudango_Hurt.png";
   int _currentEnemyHP = 100;
   int _totalEnemyHP = 100;
+  bool _showEnemyHurt = false;
 
   @override
   void initState() {
@@ -152,8 +154,18 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     } else {
       if (_currentEnemyHP - value > 0) {
+        //If player is correct
         setState(() {
+          _correctAnswerCount++;
           _currentEnemyHP -= value;
+          _showEnemyHurt = true;
+        });
+
+        // Reset _showEnemyHurt after a delay (e.g., 2 seconds).
+        Future.delayed(Duration(seconds: 1), () {
+          setState(() {
+            _showEnemyHurt = false; // Reset _showEnemyHurt after 2 seconds.
+          });
         });
       } else {
         setState(() {
@@ -227,26 +239,116 @@ class _MyHomePageState extends State<MyHomePage> {
           // Define an array of level data where each element is a list
           List<List<String>> levelData = [
             //Level 1
-            ['0', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 1', '100'],
-            ['1', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 2', '100'],
-            ['2', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 3', '100'],
-            ['3', 'MiniBoss_BG.png', 'Autognawta.png', 'Mini Boss 1', '150'],
+            [
+              '0',
+              'Normal_BG.png',
+              'Kudango.png',
+              'Normal Enemy 1',
+              '100',
+              'Kudango_Hurt.png'
+            ],
+            [
+              '1',
+              'Normal_BG.png',
+              'Impeach.png',
+              'Normal Enemy 2',
+              '100',
+              'Impeach_Hurt.png'
+            ],
+            [
+              '2',
+              'Normal_BG.png',
+              'Desserter.png',
+              'Normal Enemy 3',
+              '100',
+              'Desserter_Hurt.png'
+            ],
+            [
+              '3',
+              'MiniBoss_BG.png',
+              'Autognawta.png',
+              'Mini Boss 1',
+              '150',
+              'Kudango_hurt.png'
+            ],
             //Level 2
-            ['4', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 4', '100'],
-            ['5', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 5', '100'],
-            ['6', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 6', '100'],
-            ['7', 'MiniBoss_BG.png', 'Norxnor.png', 'Mini Boss 2', '150'],
+            [
+              '4',
+              'Normal_BG.png',
+              'Kudango.png',
+              'Normal Enemy 4',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '5',
+              'Normal_BG.png',
+              'Impeach.png',
+              'Normal Enemy 5',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '6',
+              'Normal_BG.png',
+              'Desserter.png',
+              'Normal Enemy 6',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '7',
+              'MiniBoss_BG.png',
+              'Norxnor.png',
+              'Mini Boss 2',
+              '150',
+              'Kudango_hurt.png'
+            ],
             //Level 3
-            ['8', 'Normal_BG.png', 'Kudango.png', 'Normal Enemy 7', '100'],
-            ['9', 'Normal_BG.png', 'Impeach.png', 'Normal Enemy 8', '100'],
-            ['10', 'Normal_BG.png', 'Desserter.png', 'Normal Enemy 9', '100'],
-            ['11', 'MiniBoss_BG.png', 'Buffine.png', 'Mini Boss 3', '150'],
-            ['12', 'FinalBoss_BG.png', 'Ichig_Front.png', 'Final Boss', '200'],
+            [
+              '8',
+              'Normal_BG.png',
+              'Kudango.png',
+              'Normal Enemy 7',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '9',
+              'Normal_BG.png',
+              'Impeach.png',
+              'Normal Enemy 8',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '10',
+              'Normal_BG.png',
+              'Desserter.png',
+              'Normal Enemy 9',
+              '100',
+              'Kudango_hurt.png'
+            ],
+            [
+              '11',
+              'MiniBoss_BG.png',
+              'Buffine.png',
+              'Mini Boss 3',
+              '150',
+              'Kudango_hurt.png'
+            ],
+            [
+              '12',
+              'FinalBoss_BG.png',
+              'Buffine.png',
+              'Final Boss',
+              '200',
+              'Chairnine.png'
+            ],
             // Add more levels as needed
           ];
 
           if (_levelNum < levelData.length) {
-            // Check if _levelNum is within the bounds of levelData
             List<String> currentLevelData = levelData[_levelNum];
             _levelNum = int.parse(currentLevelData[0]);
             _currentBackground = currentLevelData[1];
@@ -254,6 +356,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _currentEnemyLevel = currentLevelData[3];
             _currentEnemyHP = int.parse(currentLevelData[4]);
             _totalEnemyHP = int.parse(currentLevelData[4]);
+            _EnemyHurt = currentLevelData[5];
           } else {
             // Handle cases beyond the length of levelData
             // (e.g., you can set default values or handle it as needed)
@@ -370,11 +473,20 @@ class _MyHomePageState extends State<MyHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(left: 150.0),
-                        child: Image.asset(
-                          "assets/$_currentEnemyAssetPath", // Use the current image path
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(left: 150.0),
+                              child: Image.asset(
+                                _showEnemyHurt
+                                    ? "assets/$_EnemyHurt"
+                                    : "assets/$_currentEnemyAssetPath",
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
