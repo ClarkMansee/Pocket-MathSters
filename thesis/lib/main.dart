@@ -1,4 +1,4 @@
-import 'dart:async' show Future;
+import 'dart:async' show Future, Timer;
 import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +50,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
+  late Timer _timer;
+  int _totalTime = 10; // Set your desired total time in seconds
+  int _givenTime = 5;
+  int _remainTime = 60;
 
   List<List<List<String>>> _easyDifficulties = [];
   List<List<List<String>>> _mediumDifficulties = [];
@@ -61,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _currentEasyQuestionIndex = 0;
   int _correctAnswerCount = 0;
 
-//Initial Values
+  //Initial Values
   String _currentEnemyAssetPath = "Kudango.png";
   String _currentBackground = "Normal_BG.png";
   String _currentEnemyLevel = "Normal Enemy 1";
@@ -75,6 +79,38 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _correctAnswerCount = 0;
     _loadData(); // Load data when the widget is initialized
+
+    _readDataFromFile();
+
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_remainTime > 0) {
+          _remainTime--;
+        } else {
+          _updateCounter(-10);
+          _resetTimer();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    print("CLOSED");
+    _saveDataToFile(); // Call saveDataToFile when the widget is disposed
+    super.dispose();
+  }
+
+  Future<void> _readDataFromFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/saveData.txt');
+
+    try {
+      final savedData = await file.readAsString();
+      print('Content of saveData.txt: $savedData');
+    } catch (e) {
+      print('Error reading data from file: $e');
+    }
   }
 
   void _loadData() async {
@@ -142,6 +178,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _updateCounter(int value) {
+    value = _damageCalc(value);
+
     if (value < 0) {
       if (_playerHP - value > 0) {
         setState(() {
@@ -173,6 +211,148 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     }
+
+    if (_playerHP <= 0 || _currentEnemyHP <= 0) {
+      // Check if either player or enemy HP is 0 or less
+      setState(() {
+        _levelNum++; // Increment level
+        _playerHP = 100; // Reset player HP
+
+        // Define an array of level data where each element is a list
+        List<List<String>> levelData = [
+          //Level 1
+          [
+            '0',
+            'Normal_BG.png',
+            'Kudango.png',
+            'Normal Enemy 1',
+            '100',
+            'Kudango_Hurt.png'
+          ],
+          [
+            '1',
+            'Normal_BG.png',
+            'Impeach.png',
+            'Normal Enemy 2',
+            '100',
+            'Impeach_Hurt.png'
+          ],
+          [
+            '2',
+            'Normal_BG.png',
+            'Desserter.png',
+            'Normal Enemy 3',
+            '100',
+            'Desserter_Hurt.png'
+          ],
+          [
+            '3',
+            'MiniBoss_BG.png',
+            'Autognawta.png',
+            'Mini Boss 1',
+            '150',
+            'Kudango_hurt.png'
+          ],
+          //Level 2
+          [
+            '4',
+            'Normal_BG.png',
+            'Kudango.png',
+            'Normal Enemy 4',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '5',
+            'Normal_BG.png',
+            'Impeach.png',
+            'Normal Enemy 5',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '6',
+            'Normal_BG.png',
+            'Desserter.png',
+            'Normal Enemy 6',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '7',
+            'MiniBoss_BG.png',
+            'Norxnor.png',
+            'Mini Boss 2',
+            '150',
+            'Kudango_hurt.png'
+          ],
+          //Level 3
+          [
+            '8',
+            'Normal_BG.png',
+            'Kudango.png',
+            'Normal Enemy 7',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '9',
+            'Normal_BG.png',
+            'Impeach.png',
+            'Normal Enemy 8',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '10',
+            'Normal_BG.png',
+            'Desserter.png',
+            'Normal Enemy 9',
+            '100',
+            'Kudango_hurt.png'
+          ],
+          [
+            '11',
+            'MiniBoss_BG.png',
+            'Buffine.png',
+            'Mini Boss 3',
+            '150',
+            'Kudango_hurt.png'
+          ],
+          [
+            '12',
+            'FinalBoss_BG.png',
+            'Buffine.png',
+            'Final Boss',
+            '200',
+            'Chairnine.png'
+          ],
+          // Add more levels as needed
+        ];
+
+        if (_levelNum < levelData.length) {
+          List<String> currentLevelData = levelData[_levelNum];
+          _levelNum = int.parse(currentLevelData[0]);
+          _currentBackground = currentLevelData[1];
+          _currentEnemyAssetPath = currentLevelData[2];
+          _currentEnemyLevel = currentLevelData[3];
+          _currentEnemyHP = int.parse(currentLevelData[4]);
+          _totalEnemyHP = int.parse(currentLevelData[4]);
+          _EnemyHurt = currentLevelData[5];
+        } else {
+          // Handle cases beyond the length of levelData
+          // (e.g., you can set default values or handle it as needed)
+        }
+      });
+    }
+
+    print("Current Level: ${_levelNum + 1}");
+
+    setState(() {
+      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+      _initializeOptions();
+      _resetTimer();
+    });
   }
 
   List<int> _usedQuestionIndices = [];
@@ -222,6 +402,26 @@ class _MyHomePageState extends State<MyHomePage> {
     print("Current Selected Option: $_selectedOption");
   }
 
+  int _damageCalc(int baseDamage) {
+    int finalDamage = 0;
+    double timeMod = 0;
+    timeMod = _remainTime / (_totalTime - _givenTime);
+    if (timeMod > 1) {
+      timeMod = 1;
+    }
+    if (baseDamage < 0) {
+      timeMod = 1 - timeMod;
+    }
+    finalDamage = (baseDamage * (1 + timeMod)).round();
+    print("base dmg: $baseDamage");
+    print("current time: $_remainTime");
+    print("time mod: $timeMod");
+    print("final dmg prior to int is ${baseDamage * (1 + timeMod)}");
+    print("final dmg after to int is $finalDamage");
+
+    return finalDamage;
+  }
+
   void _confirmAnswer() {
     if (_selectedOption != null) {
       _updateCounter(int.parse(
@@ -229,150 +429,15 @@ class _MyHomePageState extends State<MyHomePage> {
       print("\nCorrect Answers: $_correctAnswerCount");
       print("Chose: ${_selectedOption![0]}");
       _selectedOption = null; // Reset selected option
-
-      if (_playerHP <= 0 || _currentEnemyHP <= 0) {
-        // Check if either player or enemy HP is 0 or less
-        setState(() {
-          _levelNum++; // Increment level
-          _playerHP = 100; // Reset player HP
-
-          // Define an array of level data where each element is a list
-          List<List<String>> levelData = [
-            //Level 1
-            [
-              '0',
-              'Normal_BG.png',
-              'Kudango.png',
-              'Normal Enemy 1',
-              '100',
-              'Kudango_Hurt.png'
-            ],
-            [
-              '1',
-              'Normal_BG.png',
-              'Impeach.png',
-              'Normal Enemy 2',
-              '100',
-              'Impeach_Hurt.png'
-            ],
-            [
-              '2',
-              'Normal_BG.png',
-              'Desserter.png',
-              'Normal Enemy 3',
-              '100',
-              'Desserter_Hurt.png'
-            ],
-            [
-              '3',
-              'MiniBoss_BG.png',
-              'Autognawta.png',
-              'Mini Boss 1',
-              '150',
-              'Kudango_hurt.png'
-            ],
-            //Level 2
-            [
-              '4',
-              'Normal_BG.png',
-              'Kudango.png',
-              'Normal Enemy 4',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '5',
-              'Normal_BG.png',
-              'Impeach.png',
-              'Normal Enemy 5',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '6',
-              'Normal_BG.png',
-              'Desserter.png',
-              'Normal Enemy 6',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '7',
-              'MiniBoss_BG.png',
-              'Norxnor.png',
-              'Mini Boss 2',
-              '150',
-              'Kudango_hurt.png'
-            ],
-            //Level 3
-            [
-              '8',
-              'Normal_BG.png',
-              'Kudango.png',
-              'Normal Enemy 7',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '9',
-              'Normal_BG.png',
-              'Impeach.png',
-              'Normal Enemy 8',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '10',
-              'Normal_BG.png',
-              'Desserter.png',
-              'Normal Enemy 9',
-              '100',
-              'Kudango_hurt.png'
-            ],
-            [
-              '11',
-              'MiniBoss_BG.png',
-              'Buffine.png',
-              'Mini Boss 3',
-              '150',
-              'Kudango_hurt.png'
-            ],
-            [
-              '12',
-              'FinalBoss_BG.png',
-              'Buffine.png',
-              'Final Boss',
-              '200',
-              'Chairnine.png'
-            ],
-            // Add more levels as needed
-          ];
-
-          if (_levelNum < levelData.length) {
-            List<String> currentLevelData = levelData[_levelNum];
-            _levelNum = int.parse(currentLevelData[0]);
-            _currentBackground = currentLevelData[1];
-            _currentEnemyAssetPath = currentLevelData[2];
-            _currentEnemyLevel = currentLevelData[3];
-            _currentEnemyHP = int.parse(currentLevelData[4]);
-            _totalEnemyHP = int.parse(currentLevelData[4]);
-            _EnemyHurt = currentLevelData[5];
-          } else {
-            // Handle cases beyond the length of levelData
-            // (e.g., you can set default values or handle it as needed)
-          }
-        });
-      }
-
-      print("Current Level: ${_levelNum + 1}");
-
-      setState(() {
-        _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
-        _initializeOptions();
-      });
     } else {
       print("No option has been selected");
     }
+  }
+
+  void _resetTimer() {
+    setState(() {
+      _remainTime = _totalTime;
+    });
   }
 
   //-------------Layout part of the code----------------------
@@ -395,6 +460,31 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // ElevatedButton(
+                    //   onPressed: () {
+                    //     _saveDataToFile();
+                    //     SystemNavigator.pop(); // This will close the app
+                    //   },
+                    //   style: ElevatedButton.styleFrom(
+                    //     primary: Colors
+                    //         .red, // Customize the button color as you like
+                    //     onPrimary: Colors.white,
+                    //   ),
+                    //   child: const Text(
+                    //     'Close Game',
+                    //     style: TextStyle(
+                    //       fontFamily: 'Silkscreen',
+                    //     ),
+                    //   ),
+                    // ),
+                    Text(
+                      'Time: $_remainTime seconds',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontFamily: 'Silkscreen',
+                      ),
+                    ),
                     Expanded(
                       child: Stack(
                         children: [
