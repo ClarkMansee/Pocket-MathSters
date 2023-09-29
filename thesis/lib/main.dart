@@ -153,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _hardDifficulties = hard;
 
     setState(() {
-      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+      _resetTimer();
       _initializeOptions();
     });
   }
@@ -375,6 +375,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _usedQuestionIndices.add(newIndex);
     _currentEasyQuestionIndex = newIndex;
+
+    _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
+    _totalTime = int.parse(_easyDifficulties[_currentEasyQuestionIndex][0][1]);
+    _givenTime = int.parse(_easyDifficulties[_currentEasyQuestionIndex][0][2]);
+
+    print(_currentEasyQuestionIndex);
+    print(_totalTime);
+    print(_givenTime);
 
     List<List<String>> questionData =
         _easyDifficulties[_currentEasyQuestionIndex];
