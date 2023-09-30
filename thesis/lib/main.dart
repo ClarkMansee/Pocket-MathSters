@@ -47,7 +47,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
   late Timer _timer;
@@ -92,13 +92,25 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       });
     });
+
+    WidgetsBinding.instance!.addObserver(this);
   }
 
   @override
   void dispose() {
     print("CLOSED");
     _saveDataToFile(); // Call saveDataToFile when the widget is disposed
+    WidgetsBinding.instance!.removeObserver(this); // Remove observer
+    _timer.cancel(); // Cancel the timer
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // The app is about to be closed (or paused in the background on iOS)
+      _saveDataToFile();
+    }
   }
 
   Future<void> _readDataFromFile() async {
