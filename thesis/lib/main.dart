@@ -251,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Autognawta.png',
             'Mini Boss 1',
             '150',
-            'Kudango_hurt.png'
+            'Autognawta_Hurt.png'
           ],
           //Level 2
           [
@@ -260,7 +260,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Kudango.png',
             'Normal Enemy 4',
             '100',
-            'Kudango_hurt.png'
+            'Kudango_Hurt.png'
           ],
           [
             '5',
@@ -268,7 +268,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Impeach.png',
             'Normal Enemy 5',
             '100',
-            'Kudango_hurt.png'
+            'Impeach_Hurt.png'
           ],
           [
             '6',
@@ -276,7 +276,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Desserter.png',
             'Normal Enemy 6',
             '100',
-            'Kudango_hurt.png'
+            'Desserter_Hurt.png'
           ],
           [
             '7',
@@ -284,7 +284,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Norxnor.png',
             'Mini Boss 2',
             '150',
-            'Kudango_hurt.png'
+            'Norxnor_Hurt.png'
           ],
           //Level 3
           [
@@ -293,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Kudango.png',
             'Normal Enemy 7',
             '100',
-            'Kudango_hurt.png'
+            'Kudango_Hurt.png'
           ],
           [
             '9',
@@ -301,7 +301,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Impeach.png',
             'Normal Enemy 8',
             '100',
-            'Kudango_hurt.png'
+            'Impeach_Hurt.png'
           ],
           [
             '10',
@@ -309,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'Desserter.png',
             'Normal Enemy 9',
             '100',
-            'Kudango_hurt.png'
+            'Desserter_Hurt.png'
           ],
           [
             '11',
@@ -317,12 +317,12 @@ class _MyHomePageState extends State<MyHomePage> {
             'Buffine.png',
             'Mini Boss 3',
             '150',
-            'Kudango_hurt.png'
+            'Buffine_Hurt.png'
           ],
           [
             '12',
             'FinalBoss_BG.png',
-            'Buffine.png',
+            'Chairnine.png',
             'Final Boss',
             '200',
             'Chairnine.png'
@@ -485,14 +485,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     //     ),
                     //   ),
                     // ),
-                    Text(
-                      'Time: $_remainTime seconds',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontFamily: 'Silkscreen',
-                      ),
-                    ),
                     Expanded(
                       child: Stack(
                         children: [
@@ -570,6 +562,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20.0),
+                      child: Text(
+                        'Time: $_remainTime seconds',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontFamily: 'Silkscreen',
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
