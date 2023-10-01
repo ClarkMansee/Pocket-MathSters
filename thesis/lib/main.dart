@@ -444,8 +444,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       print("pumasok sa empty");
     }
 
-    print("curr diff: $_currentDifficulty");
-
     switch (difficulty) {
       case 0:
         if (_usedEasyQuestionIndices.length != _easyDifficulties.length) {
@@ -485,20 +483,17 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         break;
     }
 
-    // print(newIndex);
-    _currentEasyQuestionIndex = newIndex;
-
-    print("curr diff: $_currentDifficulty");
     if (_currentDifficulty.isNotEmpty) {
       _totalTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
       _givenTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
 
-      questionData = _currentDifficulty[_currentEasyQuestionIndex];
+      print(questionData);
+      questionData = _currentDifficulty[newIndex];
     }
 
-    print("index: $_currentEasyQuestionIndex");
+    print("index: $newIndex");
     setState(() {
       _options = List.from(questionData.sublist(1));
       _options = _shuffleList(_options);
