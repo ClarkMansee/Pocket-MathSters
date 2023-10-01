@@ -8,6 +8,8 @@ import 'dart:io';
 
 import 'package:thesis/splash.dart';
 
+import 'leaderboard.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -17,6 +19,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Remove the System UI on top
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     // Landscape orientation
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
@@ -30,6 +34,7 @@ class MyApp extends StatelessWidget {
       home: MyHomePage(
         title: 'Pocket MathSters',
       ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -352,8 +357,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _totalEnemyHP = int.parse(currentLevelData[4]);
           _EnemyHurt = currentLevelData[5];
         } else {
-          // Handle cases beyond the length of levelData
-          // (e.g., you can set default values or handle it as needed)
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LeaderboardScreen(
+                correctAnswerCount: _correctAnswerCount,
+              ),
+            ),
+          );
         }
       });
     }
@@ -534,6 +545,32 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         ],
                       ),
                     ),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LeaderboardScreen(
+                                correctAnswerCount: _correctAnswerCount,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors
+                              .blue, // Customize the button color as you like
+                          onPrimary: Colors.white,
+                        ),
+                        child: const Text(
+                          'Leaderboard',
+                          style: TextStyle(
+                            fontFamily: 'Silkscreen',
+                          ),
+                        ),
+                      ),
+                    ),
+
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
