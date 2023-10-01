@@ -51,6 +51,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  bool _hasReadDataFromFile = false;
+
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
   late Timer _timer;
@@ -101,6 +103,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
 
     WidgetsBinding.instance!.addObserver(this);
+
+    if (!_hasReadDataFromFile) {
+      _readDataFromFile();
+      _hasReadDataFromFile = true;
+    }
   }
 
   @override
@@ -126,6 +133,31 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     try {
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
+
+      // Parse the saved data and update variables
+      final lines = savedData.split('\n');
+      for (final line in lines) {
+        if (line.startsWith('Easy Correct answers:')) {
+          _correctAnswerCounts[0] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Medium Correct answers:')) {
+          _correctAnswerCounts[1] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Hard Correct answers:')) {
+          _correctAnswerCounts[2] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Used Easy Questions:')) {
+          _usedEasyQuestionIndices
+              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+        } else if (line.startsWith('Used Medium Questions:')) {
+          _usedMediumQuestionIndices
+              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+        } else if (line.startsWith('Used Hard Questions:')) {
+          _usedHardQuestionIndices
+              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+        } else if (line.startsWith('Level:')) {
+          _levelNum = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyHP')) {
+          _currentEnemyHP = int.parse(line.split(' ')[1]);
+        }
+      }
     } catch (e) {
       print('Error reading data from file: $e');
     }
@@ -188,8 +220,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Used Easy Questions: $_usedEasyQuestionIndices\n'
               'Used Medium Questions: $_usedMediumQuestionIndices\n'
               'Used Hard Questions: $_usedHardQuestionIndices\n'
-              'Level: $_levelNum\n');
+              'Level: $_levelNum\n'
+              'enemyHP $_currentEnemyHP');
       print('Data saved to file successfully');
+      final savedData = await file.readAsString();
+      print('Content of saveData.txt: $savedData');
     } catch (e) {
       print('Error saving data to file: $e');
     }
