@@ -180,17 +180,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/saveData.txt');
 
-    print("Easy Correct: ${_correctAnswerCounts[0]}");
-    print("Medium Correct: ${_correctAnswerCounts[1]}");
-    print("Hard Correct: ${_correctAnswerCounts[2]}");
-
     try {
-      await file.writeAsString(
-          'Correct Answers: ${_correctAnswerCounts[0]}, ${_correctAnswerCounts[1]}, ${_correctAnswerCounts[2]}');
+      await file
+          .writeAsString('Easy Correct answers: ${_correctAnswerCounts[0]}\n'
+              'Medium Correct answers: ${_correctAnswerCounts[1]}\n'
+              'Hard Correct answers: ${_correctAnswerCounts[2]}\n'
+              'Used Easy Questions: $_usedEasyQuestionIndices\n'
+              'Used Medium Questions: $_usedMediumQuestionIndices\n'
+              'Used Hard Questions: $_usedHardQuestionIndices\n'
+              'Level: $_levelNum\n');
       print('Data saved to file successfully');
-
-      final savedData = await file.readAsString();
-      print('Content of saveData.txt: $savedData');
     } catch (e) {
       print('Error saving data to file: $e');
     }
@@ -493,17 +492,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         break;
     }
 
-    // print(newIndex);
-    _currentEasyQuestionIndex = newIndex;
-
-    print("curr diff: $_currentDifficulty");
+    print("curr diff: ${_currentDifficulty[newIndex]}");
     if (_currentDifficulty.isNotEmpty) {
       _totalTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
       _givenTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
 
-      questionData = _currentDifficulty[_currentEasyQuestionIndex];
+      questionData = _currentDifficulty[newIndex];
     }
 
     print("index: $_currentEasyQuestionIndex");
