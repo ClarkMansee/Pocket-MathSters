@@ -65,6 +65,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<List<List<String>>> _hardDifficulties = [];
   List<List<List<String>>> _currentDifficulty = [];
   List<List<String>> questionData = [];
+  List<int> _usedEasyQuestionIndices = [];
+  List<int> _usedMediumQuestionIndices = [];
+  List<int> _usedHardQuestionIndices = [];
 
   List<List<String>> _options = [];
   List<String>? _selectedOption;
@@ -207,7 +210,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     Random random = Random();
     difficulty =
         random.nextInt(3); // Generates a random number between 0, 1, or 2
-
+    print("diff: $difficulty");
     switch (difficulty) {
       case 0:
         _currentDifficulty = _easyDifficulties;
@@ -225,7 +228,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
 
     setState(() {
-      _currentEasyQuestionIndex = _getRandomIndex(_currentDifficulty);
       _initializeOptions();
     });
   }
@@ -243,8 +245,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _playerHP = 0;
         });
       }
-
-      _wrongQuestionIndices[difficulty].add(_currentEasyQuestionIndex);
     } else {
       if (_currentEnemyHP - value > 0) {
         //If player is correct
@@ -259,6 +259,22 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         print("Medium Correct: ${_correctAnswerCounts[1]}");
         print("Hard Correct: ${_correctAnswerCounts[2]}");
 
+        switch (difficulty) {
+          case 0:
+            _usedEasyQuestionIndices.add(_currentEasyQuestionIndex);
+            break;
+          case 1:
+            _usedMediumQuestionIndices.add(_currentEasyQuestionIndex);
+            break;
+          case 2:
+            _usedHardQuestionIndices.add(_currentEasyQuestionIndex);
+            break;
+        }
+
+        print(_usedEasyQuestionIndices);
+        print(_usedMediumQuestionIndices);
+        print(_usedHardQuestionIndices);
+
         // Reset _showEnemyHurt after a delay (e.g., 2 seconds).
         Future.delayed(Duration(seconds: 1), () {
           setState(() {
@@ -270,8 +286,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = 0;
         });
       }
-
-      _usedQuestionIndices[difficulty].add(_currentEasyQuestionIndex);
     }
 
     if (_playerHP <= 0 || _currentEnemyHP <= 0) {
@@ -418,61 +432,78 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
     setState(() {
       _randomizeDifficulty();
-      _currentEasyQuestionIndex = _getRandomIndex(_currentDifficulty);
     });
   }
 
-  List<List<int>> _usedQuestionIndices = [
-    [], // Easy
-    [], // Medium
-    [], // Hard
-  ];
-  List<List<int>> _wrongQuestionIndices = [
-    [], // Easy
-    [], // Medium
-    [], // Hard
-  ];
+  int newIndex = 0;
+  List<int> _usedQuestionIndices = [];
 
   void _initializeOptions() {
     if (_currentDifficulty.isEmpty) {
       _currentDifficulty = _easyDifficulties;
+      print("pumasok sa empty");
     }
 
-    int newIndex = 0;
-    bool shouldRandomizeDifficulty = false;
+    print("curr diff: $_currentDifficulty");
 
-    if (_currentDifficulty.length == _usedQuestionIndices[difficulty].length) {
-      shouldRandomizeDifficulty = true;
-    } else {
-      do {
-        newIndex = _getRandomIndex(_currentDifficulty);
-        print(newIndex);
-      } while (_usedQuestionIndices[difficulty].contains(newIndex) ||
-          _wrongQuestionIndices[difficulty].contains(newIndex));
+    switch (difficulty) {
+      case 0:
+        if (_usedEasyQuestionIndices.length != _easyDifficulties.length) {
+          while (_usedEasyQuestionIndices.contains(newIndex)) {
+            newIndex = _getRandomIndex(_currentDifficulty);
+            print(newIndex);
+          }
+          _currentEasyQuestionIndex = newIndex;
+        } else {
+          _randomizeDifficulty();
+        }
+        break;
+      case 1:
+        if (_usedMediumQuestionIndices.length != _mediumDifficulties.length) {
+          while (_usedMediumQuestionIndices.contains(newIndex)) {
+            newIndex = _getRandomIndex(_currentDifficulty);
+            print(newIndex);
+          }
+          _currentEasyQuestionIndex = newIndex;
+        } else {
+          _randomizeDifficulty();
+        }
+        break;
+      case 2:
+        if (_usedHardQuestionIndices.length != _hardDifficulties.length) {
+          while (_usedHardQuestionIndices.contains(newIndex)) {
+            newIndex = _getRandomIndex(_currentDifficulty);
+            print(newIndex);
+          }
+          _currentEasyQuestionIndex = newIndex;
+        } else {
+          _randomizeDifficulty();
+        }
+        break;
+      default:
+        newIndex = 0;
+        break;
     }
 
-    if (shouldRandomizeDifficulty) {
-      _randomizeDifficulty();
-    } else {
-      _currentEasyQuestionIndex = newIndex;
-      print("right $_usedQuestionIndices");
-      print("wrong $_wrongQuestionIndices");
-      if (_currentDifficulty.isNotEmpty) {
-        _totalTime =
-            int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
-        _givenTime =
-            int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
+    // print(newIndex);
+    _currentEasyQuestionIndex = newIndex;
 
-        questionData = _currentDifficulty[_currentEasyQuestionIndex];
-      }
-      Future.delayed(Duration.zero, () {
-        setState(() {
-          _options = List.from(questionData.sublist(1));
-          _options = _shuffleList(_options);
-          _resetTimer();
-        });
-      });
+    print("curr diff: $_currentDifficulty");
+    if (_currentDifficulty.isNotEmpty) {
+      _totalTime =
+          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
+      _givenTime =
+          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
+
+      questionData = _currentDifficulty[_currentEasyQuestionIndex];
     }
+
+    print("index: $_currentEasyQuestionIndex");
+    setState(() {
+      _options = List.from(questionData.sublist(1));
+      _options = _shuffleList(_options);
+      _resetTimer();
+    });
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
