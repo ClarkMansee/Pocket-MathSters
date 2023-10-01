@@ -31,9 +31,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: MyHomePage(
-        title: 'Pocket MathSters',
-      ),
+      home: Splash(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -211,6 +209,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     difficulty =
         random.nextInt(3); // Generates a random number between 0, 1, or 2
     print("diff: $difficulty");
+
+    // Check if _currentDifficulty is empty before setting it
+    if (_easyDifficulties.isEmpty ||
+        _mediumDifficulties.isEmpty ||
+        _hardDifficulties.isEmpty) {
+      print("One or more difficulty lists is empty.");
+      return; // Exit the function or handle this case as needed.
+    }
+
     switch (difficulty) {
       case 0:
         _currentDifficulty = _easyDifficulties;
@@ -416,14 +423,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _totalEnemyHP = int.parse(currentLevelData[4]);
           _EnemyHurt = currentLevelData[5];
         } else {
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => LeaderboardScreen(
-          //       correctAnswerCount: _correctAnswerCount,
-          //     ),
-          //   ),
-          // );
+          _timer.cancel(); // Cancel the timer
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LeaderboardScreen(
+                correctAnswerCounts: _correctAnswerCounts,
+              ),
+            ),
+          );
         }
       });
     }
@@ -443,6 +451,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       _currentDifficulty = _easyDifficulties;
       print("pumasok sa empty");
     }
+
+    print("curr diff: $_currentDifficulty");
 
     switch (difficulty) {
       case 0:
@@ -483,19 +493,20 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         break;
     }
 
+    // print(newIndex);
+    _currentEasyQuestionIndex = newIndex;
+
+    print("curr diff: $_currentDifficulty");
     if (_currentDifficulty.isNotEmpty) {
       _totalTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
       _givenTime =
           int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
 
-      print(questionData);
-      questionData = _currentDifficulty[newIndex];
+      questionData = _currentDifficulty[_currentEasyQuestionIndex];
     }
 
-    print("curr diff: ${_currentDifficulty[newIndex]}");
-
-    print("index: $newIndex");
+    print("index: $_currentEasyQuestionIndex");
     setState(() {
       _options = List.from(questionData.sublist(1));
       _options = _shuffleList(_options);
@@ -537,6 +548,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     print("current time: $_remainTime");
     print("time mod: $timeMod");
     print("final dmg prior to int is ${baseDamage * (1 + timeMod)}");
+
+    try {
+      finalDamage = int.parse(finalDamage.toString()); // Attempt to parse
+    } catch (e) {
+      print("Error parsing finalDamage: $e");
+    }
+
     print("final dmg after to int is $finalDamage");
 
     return finalDamage;
