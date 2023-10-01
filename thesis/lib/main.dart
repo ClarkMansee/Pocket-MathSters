@@ -243,6 +243,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _playerHP = 0;
         });
       }
+
+      _wrongQuestionIndices[difficulty].add(_currentEasyQuestionIndex);
     } else {
       if (_currentEnemyHP - value > 0) {
         //If player is correct
@@ -268,6 +270,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = 0;
         });
       }
+
+      _usedQuestionIndices[difficulty].add(_currentEasyQuestionIndex);
     }
 
     if (_playerHP <= 0 || _currentEnemyHP <= 0) {
@@ -418,43 +422,57 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
   }
 
-  List<int> _usedQuestionIndices = [];
+  List<List<int>> _usedQuestionIndices = [
+    [], // Easy
+    [], // Medium
+    [], // Hard
+  ];
+  List<List<int>> _wrongQuestionIndices = [
+    [], // Easy
+    [], // Medium
+    [], // Hard
+  ];
 
   void _initializeOptions() {
     if (_currentDifficulty.isEmpty) {
       _currentDifficulty = _easyDifficulties;
-      print("pumasok sa empty");
     }
 
-    print("curr diff: $_currentDifficulty");
-    if (_currentDifficulty.length == _usedQuestionIndices.length) {
-      _usedQuestionIndices.clear();
+    int newIndex = 0;
+    bool shouldRandomizeDifficulty = false;
+
+    if (_currentDifficulty.length == _usedQuestionIndices[difficulty].length) {
+      shouldRandomizeDifficulty = true;
+    } else {
+      do {
+        newIndex = _getRandomIndex(_currentDifficulty);
+        print(newIndex);
+      } while (_usedQuestionIndices[difficulty].contains(newIndex) ||
+          _wrongQuestionIndices[difficulty].contains(newIndex));
     }
 
-    int newIndex;
+    if (shouldRandomizeDifficulty) {
+      _randomizeDifficulty();
+    } else {
+      _currentEasyQuestionIndex = newIndex;
+      print("right $_usedQuestionIndices");
+      print("wrong $_wrongQuestionIndices");
+      if (_currentDifficulty.isNotEmpty) {
+        _totalTime =
+            int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
+        _givenTime =
+            int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
 
-    do {
-      newIndex = _getRandomIndex(_currentDifficulty);
-    } while (_usedQuestionIndices.contains(newIndex));
-    print(newIndex);
-    _usedQuestionIndices.add(newIndex);
-    _currentEasyQuestionIndex = newIndex;
-    if (_currentDifficulty.isNotEmpty) {
-      _totalTime =
-          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
-      _givenTime =
-          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
-
-      questionData = _currentDifficulty[_currentEasyQuestionIndex];
-    }
-    print("index: $_currentEasyQuestionIndex");
-    Future.delayed(Duration.zero, () {
-      setState(() {
-        _options = List.from(questionData.sublist(1));
-        _options = _shuffleList(_options);
-        _resetTimer();
+        questionData = _currentDifficulty[_currentEasyQuestionIndex];
+      }
+      Future.delayed(Duration.zero, () {
+        setState(() {
+          _options = List.from(questionData.sublist(1));
+          _options = _shuffleList(_options);
+          _resetTimer();
+        });
       });
-    });
+    }
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
