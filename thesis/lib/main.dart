@@ -56,19 +56,22 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
   late Timer _timer;
-  int _totalTime = 10; // Set your desired total time in seconds
-  int _givenTime = 5;
+  int _totalTime = 60; // Set your desired total time in seconds
+  int _givenTime = 20;
   int _remainTime = 60;
 
   List<List<List<String>>> _easyDifficulties = [];
   List<List<List<String>>> _mediumDifficulties = [];
   List<List<List<String>>> _hardDifficulties = [];
+  List<List<List<String>>> _currentDifficulty = [];
+  List<List<String>> questionData = [];
 
   List<List<String>> _options = [];
   List<String>? _selectedOption;
 
   int _currentEasyQuestionIndex = 0;
-  int _correctAnswerCount = 0;
+  List<int> _correctAnswerCounts = [0, 0, 0];
+  int difficulty = 0;
 
   //Initial Values
   String _currentEnemyAssetPath = "Kudango.png";
@@ -82,9 +85,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _correctAnswerCount = 0;
     _loadData(); // Load data when the widget is initialized
-
     _readDataFromFile();
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
@@ -103,7 +104,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    print("CLOSED");
     _saveDataToFile(); // Call saveDataToFile when the widget is disposed
     WidgetsBinding.instance!.removeObserver(this); // Remove observer
     _timer.cancel(); // Cancel the timer
@@ -131,6 +131,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void _loadData() async {
+    print("load pumasok");
     String loadedData = await loadAsset();
     List<String> lines = loadedData.split('\n');
 
@@ -142,7 +143,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
     for (int i = 0; i < lines.length; i++) {
       String line = lines[i];
-
+      // print("Line $i: $line"); // Debug prints
       if (line.trim() == 'Easy') {
         currentDifficultyData = easy;
       } else if (line.trim() == 'Medium') {
@@ -170,8 +171,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _hardDifficulties = hard;
 
     setState(() {
-      _resetTimer();
-      _initializeOptions();
+      _randomizeDifficulty();
     });
   }
 
@@ -179,8 +179,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/saveData.txt');
 
+    print("Easy Correct: ${_correctAnswerCounts[0]}");
+    print("Medium Correct: ${_correctAnswerCounts[1]}");
+    print("Hard Correct: ${_correctAnswerCounts[2]}");
+
     try {
-      await file.writeAsString('Correct Answers: $_correctAnswerCount');
+      await file.writeAsString(
+          'Correct Answers: ${_correctAnswerCounts[0]}, ${_correctAnswerCounts[1]}, ${_correctAnswerCounts[2]}');
       print('Data saved to file successfully');
 
       final savedData = await file.readAsString();
@@ -191,7 +196,38 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   int _getRandomIndex(List<List<List<String>>> difficultyData) {
-    return Random().nextInt(difficultyData.length);
+    if (difficultyData.isNotEmpty) {
+      return Random().nextInt(difficultyData.length);
+    } else {
+      return 0; // Return 0 if difficultyData is empty (you can adjust this as needed)
+    }
+  }
+
+  void _randomizeDifficulty() {
+    Random random = Random();
+    difficulty =
+        random.nextInt(3); // Generates a random number between 0, 1, or 2
+
+    switch (difficulty) {
+      case 0:
+        _currentDifficulty = _easyDifficulties;
+        break;
+      case 1:
+        _currentDifficulty = _mediumDifficulties;
+        break;
+      case 2:
+        _currentDifficulty = _hardDifficulties;
+        break;
+      default:
+        _currentDifficulty =
+            _easyDifficulties; // Default to Easy if something goes wrong
+        break;
+    }
+
+    setState(() {
+      _currentEasyQuestionIndex = _getRandomIndex(_currentDifficulty);
+      _initializeOptions();
+    });
   }
 
   void _updateCounter(int value) {
@@ -211,10 +247,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       if (_currentEnemyHP - value > 0) {
         //If player is correct
         setState(() {
-          _correctAnswerCount++;
+          _correctAnswerCounts[difficulty]++;
+
           _currentEnemyHP -= value;
           _showEnemyHurt = true;
         });
+
+        print("Easy Correct: ${_correctAnswerCounts[0]}");
+        print("Medium Correct: ${_correctAnswerCounts[1]}");
+        print("Hard Correct: ${_correctAnswerCounts[2]}");
 
         // Reset _showEnemyHurt after a delay (e.g., 2 seconds).
         Future.delayed(Duration(seconds: 1), () {
@@ -357,14 +398,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _totalEnemyHP = int.parse(currentLevelData[4]);
           _EnemyHurt = currentLevelData[5];
         } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LeaderboardScreen(
-                correctAnswerCount: _correctAnswerCount,
-              ),
-            ),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => LeaderboardScreen(
+          //       correctAnswerCount: _correctAnswerCount,
+          //     ),
+          //   ),
+          // );
         }
       });
     }
@@ -372,46 +413,48 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     print("Current Level: ${_levelNum + 1}");
 
     setState(() {
-      _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
-      _initializeOptions();
-      _resetTimer();
+      _randomizeDifficulty();
+      _currentEasyQuestionIndex = _getRandomIndex(_currentDifficulty);
     });
   }
 
   List<int> _usedQuestionIndices = [];
 
   void _initializeOptions() {
-    if (_easyDifficulties.isEmpty) {
-      _options = [];
-      return;
+    if (_currentDifficulty.isEmpty) {
+      _currentDifficulty = _easyDifficulties;
+      print("pumasok sa empty");
     }
 
-    if (_easyDifficulties.length == _usedQuestionIndices.length) {
+    print("curr diff: $_currentDifficulty");
+    if (_currentDifficulty.length == _usedQuestionIndices.length) {
       _usedQuestionIndices.clear();
     }
 
     int newIndex;
 
     do {
-      newIndex = _getRandomIndex(_easyDifficulties);
+      newIndex = _getRandomIndex(_currentDifficulty);
     } while (_usedQuestionIndices.contains(newIndex));
-
+    print(newIndex);
     _usedQuestionIndices.add(newIndex);
     _currentEasyQuestionIndex = newIndex;
+    if (_currentDifficulty.isNotEmpty) {
+      _totalTime =
+          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][1]);
+      _givenTime =
+          int.parse(_currentDifficulty[_currentEasyQuestionIndex][0][2]);
 
-    _currentEasyQuestionIndex = _getRandomIndex(_easyDifficulties);
-    _totalTime = int.parse(_easyDifficulties[_currentEasyQuestionIndex][0][1]);
-    _givenTime = int.parse(_easyDifficulties[_currentEasyQuestionIndex][0][2]);
-
-    print(_currentEasyQuestionIndex);
-    print(_totalTime);
-    print(_givenTime);
-
-    List<List<String>> questionData =
-        _easyDifficulties[_currentEasyQuestionIndex];
-
-    _options = List.from(questionData.sublist(1));
-    _options = _shuffleList(_options);
+      questionData = _currentDifficulty[_currentEasyQuestionIndex];
+    }
+    print("index: $_currentEasyQuestionIndex");
+    Future.delayed(Duration.zero, () {
+      setState(() {
+        _options = List.from(questionData.sublist(1));
+        _options = _shuffleList(_options);
+        _resetTimer();
+      });
+    });
   }
 
   List<List<String>> _shuffleList(List<List<String>> list) {
@@ -457,7 +500,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     if (_selectedOption != null) {
       _updateCounter(int.parse(
           _selectedOption![1])); // Update counter using selected option
-      print("\nCorrect Answers: $_correctAnswerCount");
+      // print("\nCorrect Answers: $_correctAnswerCount");
       print("Chose: ${_selectedOption![0]}");
       _selectedOption = null; // Reset selected option
     } else {
@@ -545,31 +588,31 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         ],
                       ),
                     ),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LeaderboardScreen(
-                                correctAnswerCount: _correctAnswerCount,
-                              ),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors
-                              .blue, // Customize the button color as you like
-                          onPrimary: Colors.white,
-                        ),
-                        child: const Text(
-                          'Leaderboard',
-                          style: TextStyle(
-                            fontFamily: 'Silkscreen',
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Expanded(
+                    //   child: ElevatedButton(
+                    //     onPressed: () {
+                    //       Navigator.push(
+                    //         context,
+                    //         MaterialPageRoute(
+                    //           builder: (context) => LeaderboardScreen(
+                    //             correctAnswerCount: _correctAnswerCount,
+                    //           ),
+                    //         ),
+                    //       );
+                    //     },
+                    //     style: ElevatedButton.styleFrom(
+                    //       primary: Colors
+                    //           .blue, // Customize the button color as you like
+                    //       onPrimary: Colors.white,
+                    //     ),
+                    //     child: const Text(
+                    //       'Leaderboard',
+                    //       style: TextStyle(
+                    //         fontFamily: 'Silkscreen',
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
 
                     Expanded(
                       child: Row(
@@ -588,9 +631,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                               margin: const EdgeInsets.all(10.0),
                               alignment: Alignment.center,
                               child: Text(
-                                _easyDifficulties.isNotEmpty &&
-                                        _easyDifficulties[0].isNotEmpty
-                                    ? _easyDifficulties[
+                                _currentDifficulty.isNotEmpty &&
+                                        _currentDifficulty[0].isNotEmpty
+                                    ? _currentDifficulty[
                                         _currentEasyQuestionIndex][0][0]
                                     : 'No question available',
                                 style: TextStyle(
