@@ -493,6 +493,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       questionData = _currentDifficulty[newIndex];
     }
 
+    print("curr diff: ${_currentDifficulty[newIndex]}");
+
     print("index: $newIndex");
     setState(() {
       _options = List.from(questionData.sublist(1));
