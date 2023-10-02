@@ -89,7 +89,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _loadData(); // Load data when the widget is initialized
-    _readDataFromFile();
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -144,18 +143,38 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         } else if (line.startsWith('Hard Correct answers:')) {
           _correctAnswerCounts[2] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Used Easy Questions:')) {
-          _usedEasyQuestionIndices
-              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+          _usedEasyQuestionIndices.addAll(
+            line
+                .split(': ')[1]
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .split(', ')
+                .map(int.parse),
+          );
         } else if (line.startsWith('Used Medium Questions:')) {
-          _usedMediumQuestionIndices
-              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+          _usedMediumQuestionIndices.addAll(
+            line
+                .split(': ')[1]
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .split(', ')
+                .map(int.parse),
+          );
         } else if (line.startsWith('Used Hard Questions:')) {
-          _usedHardQuestionIndices
-              .addAll(line.split(': ')[1].split(', ').map(int.parse));
+          _usedHardQuestionIndices.addAll(
+            line
+                .split(': ')[1]
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .split(', ')
+                .map(int.parse),
+          );
         } else if (line.startsWith('Level:')) {
           _levelNum = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('enemyHP')) {
-          _currentEnemyHP = int.parse(line.split(' ')[1]);
+          _currentEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('playerHP')) {
+          _playerHP = int.parse(line.split(': ')[1]);
         }
       }
     } catch (e) {
@@ -221,7 +240,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Used Medium Questions: $_usedMediumQuestionIndices\n'
               'Used Hard Questions: $_usedHardQuestionIndices\n'
               'Level: $_levelNum\n'
-              'enemyHP $_currentEnemyHP');
+              'enemyHP: $_currentEnemyHP\n'
+              'playerHP: $_playerHP');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
@@ -300,22 +320,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         print("Medium Correct: ${_correctAnswerCounts[1]}");
         print("Hard Correct: ${_correctAnswerCounts[2]}");
 
-        switch (difficulty) {
-          case 0:
-            _usedEasyQuestionIndices.add(_currentEasyQuestionIndex);
-            break;
-          case 1:
-            _usedMediumQuestionIndices.add(_currentEasyQuestionIndex);
-            break;
-          case 2:
-            _usedHardQuestionIndices.add(_currentEasyQuestionIndex);
-            break;
-        }
-
-        print(_usedEasyQuestionIndices);
-        print(_usedMediumQuestionIndices);
-        print(_usedHardQuestionIndices);
-
         // Reset _showEnemyHurt after a delay (e.g., 2 seconds).
         Future.delayed(Duration(seconds: 1), () {
           setState(() {
@@ -327,6 +331,22 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = 0;
         });
       }
+
+      switch (difficulty) {
+        case 0:
+          _usedEasyQuestionIndices.add(_currentEasyQuestionIndex);
+          break;
+        case 1:
+          _usedMediumQuestionIndices.add(_currentEasyQuestionIndex);
+          break;
+        case 2:
+          _usedHardQuestionIndices.add(_currentEasyQuestionIndex);
+          break;
+      }
+
+      print(_usedEasyQuestionIndices);
+      print(_usedMediumQuestionIndices);
+      print(_usedHardQuestionIndices);
     }
 
     if (_playerHP <= 0 || _currentEnemyHP <= 0) {
@@ -481,6 +501,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<int> _usedQuestionIndices = [];
 
   void _initializeOptions() {
+    // _readDataFromFile();
     if (_currentDifficulty.isEmpty) {
       _currentDifficulty = _easyDifficulties;
       print("pumasok sa empty");
