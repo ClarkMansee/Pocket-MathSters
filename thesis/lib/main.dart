@@ -69,6 +69,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<int> _usedMediumQuestionIndices = [];
   List<int> _usedHardQuestionIndices = [];
 
+  //Total Question counter
+  int easyQuestionCount = 0;
+  int mediumQuestionCount = 0;
+  int hardQuestionCount = 0;
+
   List<List<String>> _options = [];
   List<String>? _selectedOption;
 
@@ -294,6 +299,21 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void _updateCounter(int value) {
+    switch (difficulty) {
+      case 0:
+        easyQuestionCount++;
+        print("Total easy: $easyQuestionCount");
+        break;
+      case 1:
+        mediumQuestionCount++;
+        print("Total medium: $mediumQuestionCount");
+        break;
+      case 2:
+        hardQuestionCount++;
+        print("Total hard: $hardQuestionCount");
+        break;
+    }
+
     value = _damageCalc(value);
 
     if (value < 0) {
@@ -483,6 +503,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             MaterialPageRoute(
               builder: (context) => LeaderboardScreen(
                 correctAnswerCounts: _correctAnswerCounts,
+                totalEasyQuestions: easyQuestionCount,
+                totalMediumQuestions: mediumQuestionCount,
+                totalHardQuestions: hardQuestionCount,
               ),
             ),
           );
@@ -772,13 +795,38 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(left: 20.0),
-                      child: Text(
-                        'Time: $_remainTime seconds',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontFamily: 'Silkscreen',
-                        ),
+                      child: Stack(
+                        children: [
+                          // Black text with a slight offset
+                          Text(
+                            'Time: $_remainTime seconds',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'Silkscreen',
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth =
+                                    2 // Adjust the stroke width as needed
+                                ..color = Colors.black,
+                            ),
+                          ),
+                          // White text over the black text
+                          Text(
+                            'Time: $_remainTime seconds',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontFamily: 'Silkscreen',
+                              shadows: [
+                                // Add a drop shadow
+                                Shadow(
+                                  blurRadius: 20.0,
+                                  color: Colors.black.withOpacity(1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(

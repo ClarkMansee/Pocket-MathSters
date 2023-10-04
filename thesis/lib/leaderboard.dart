@@ -3,8 +3,16 @@ import 'package:flutter/services.dart';
 
 class LeaderboardScreen extends StatelessWidget {
   final List<int> correctAnswerCounts;
+  final int totalEasyQuestions;
+  final int totalMediumQuestions;
+  final int totalHardQuestions;
 
-  const LeaderboardScreen({Key? key, required this.correctAnswerCounts})
+  const LeaderboardScreen(
+      {Key? key,
+      required this.correctAnswerCounts,
+      required this.totalEasyQuestions,
+      required this.totalMediumQuestions,
+      required this.totalHardQuestions})
       : super(key: key);
 
   @override
@@ -131,7 +139,7 @@ class LeaderboardScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 Text(
-                                  '${correctAnswerCounts[0]}', // Display correctAnswerCounts[0]
+                                  '${correctAnswerCounts[0]} / $totalEasyQuestions', // Display correctAnswerCounts[0]
                                   style: const TextStyle(
                                     fontSize: 25,
                                     fontFamily: 'Silkscreen',
@@ -139,7 +147,7 @@ class LeaderboardScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '${correctAnswerCounts[1]}', // Display correctAnswerCounts[1]
+                                  '${correctAnswerCounts[1]} / $totalMediumQuestions', // Display correctAnswerCounts[1]
                                   style: const TextStyle(
                                     fontSize: 25,
                                     fontFamily: 'Silkscreen',
@@ -147,7 +155,7 @@ class LeaderboardScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '${correctAnswerCounts[2]}', // Display correctAnswerCounts[2]
+                                  '${correctAnswerCounts[2]} / $totalHardQuestions', // Display correctAnswerCounts[2]
                                   style: const TextStyle(
                                     fontSize: 25,
                                     fontFamily: 'Silkscreen',
