@@ -12,26 +12,52 @@ class _SplashState extends State<Splash> {
   @override
   void initState() {
     super.initState();
-    _navigatetohome();
+    _navigateToHome();
   }
 
-  _navigatetohome() async {
-    await Future.delayed(const Duration(milliseconds: 1500), () {});
+  _navigateToHome() async {
+    await Future.delayed(const Duration(milliseconds: 2000), () {});
     // ignore: use_build_context_synchronously
     Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => const MyHomePage(
-                  title: 'GFG',
-                )));
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyHomePage(
+          title: 'GFG',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Splash Screen',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image:
+                AssetImage("assets/Normal_BG.png"), // Set your image path here
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            'POCKET MATHSTERS',
+            style: TextStyle(
+              fontSize: 50,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontFamily: 'Silkscreen',
+              shadows: [
+                // Add a drop shadow
+                Shadow(
+                  blurRadius: 20.0,
+                  color: Colors.black.withOpacity(1),
+                  offset: Offset(5, 5),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
