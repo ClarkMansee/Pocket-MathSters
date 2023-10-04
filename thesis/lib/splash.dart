@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main.dart';
+import 'menu.dart';
 
 class Splash extends StatefulWidget {
   const Splash({Key? key}) : super(key: key);
@@ -12,18 +12,16 @@ class _SplashState extends State<Splash> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    _navigateToMainMenu();
   }
 
-  _navigateToHome() async {
+  _navigateToMainMenu() async {
     await Future.delayed(const Duration(milliseconds: 2000), () {});
     // ignore: use_build_context_synchronously
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const MyHomePage(
-          title: 'GFG',
-        ),
+        builder: (context) => MainMenu(),
       ),
     );
   }
