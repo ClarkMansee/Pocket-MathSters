@@ -53,6 +53,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  String selectedCharacter = "";
   bool _hasReadDataFromFile = false;
 
   int _playerHP = 100;
@@ -182,6 +183,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('playerHP')) {
           _playerHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Character')) {
+          selectedCharacter = line.split(': ')[1];
         }
       }
     } catch (e) {
@@ -248,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Used Hard Questions: $_usedHardQuestionIndices\n'
               'Level: $_levelNum\n'
               'enemyHP: $_currentEnemyHP\n'
-              'playerHP: $_playerHP'
+              'playerHP: $_playerHP\n'
               'Character: ${widget.selectedCharacter}');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
