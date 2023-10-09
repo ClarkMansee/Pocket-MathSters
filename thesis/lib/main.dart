@@ -183,9 +183,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('playerHP')) {
           _playerHP = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('Character')) {
-          selectedCharacter = line.split(': ')[1];
         }
+        //  else if (line.startsWith('Character')) {
+        //   selectedCharacter = line.split(': ')[1];
+        // }
       }
     } catch (e) {
       print('Error reading data from file: $e');

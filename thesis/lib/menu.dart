@@ -1,9 +1,33 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:thesis/tutorial.dart';
 import 'main.dart';
 import 'character.dart';
 
 class MainMenu extends StatelessWidget {
+  String selectedCharacter = "";
+
+  Future<void> _readDataFromFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/saveData.txt');
+
+    try {
+      final savedData = await file.readAsString();
+      print('Content of saveData.txt: $savedData');
+
+      // Parse the saved data and update variables
+      final lines = savedData.split('\n');
+      for (final line in lines) {
+        if (line.startsWith('Character')) {
+          selectedCharacter = line.split(': ')[1];
+        }
+      }
+    } catch (e) {
+      print('Error reading data from file: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,14 +68,26 @@ class MainMenu extends StatelessWidget {
 
               // Buttons for different menu options
               ElevatedButton(
-                onPressed: () {
-                  // Navigate to the game screen or play screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CharacterSelectionPage(),
-                    ),
-                  );
+                onPressed: () async {
+                  await _readDataFromFile(); // Call the readData function
+                  if (selectedCharacter == null || selectedCharacter == "") {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CharacterSelectionPage(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MyHomePage(
+                          selectedCharacter: selectedCharacter,
+                          title: 'My Home Page',
+                        ),
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   primary: Colors.transparent, // Make the button transparent
