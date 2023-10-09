@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-
 import 'package:thesis/splash.dart';
 
 import 'leaderboard.dart';
@@ -42,7 +41,10 @@ Future<String> loadAsset() async {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  final String selectedCharacter;
+
+  MyHomePage({Key? key, required this.selectedCharacter, required this.title})
+      : super(key: key);
 
   final String title;
 
@@ -246,7 +248,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Used Hard Questions: $_usedHardQuestionIndices\n'
               'Level: $_levelNum\n'
               'enemyHP: $_currentEnemyHP\n'
-              'playerHP: $_playerHP');
+              'playerHP: $_playerHP'
+              'Character: ${widget.selectedCharacter}');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
@@ -858,7 +861,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         children: [
                           Center(
                             child: Image.asset(
-                              'assets/Trunks_Back.png',
+                              'assets/${widget.selectedCharacter}',
                               fit: BoxFit.cover,
                             ),
                           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:thesis/tutorial.dart';
-import 'main.dart'; // Import your game screen and tutorial screen files
+import 'main.dart';
+import 'character.dart';
 
 class MainMenu extends StatelessWidget {
   @override
@@ -48,7 +49,7 @@ class MainMenu extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MyHomePage(title: 'GFG'),
+                      builder: (context) => CharacterSelectionPage(),
                     ),
                   );
                 },
@@ -56,9 +57,12 @@ class MainMenu extends StatelessWidget {
                   primary: Colors.transparent, // Make the button transparent
                   onPrimary: Colors.white, // Text color
                   minimumSize: Size(100, 60), // Adjust height
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0), // Make it square
+                  ),
                 ),
                 child: Text(
-                  'PLAY',
+                  'PLAY GAME',
                   style: TextStyle(
                     fontSize: 28, // Increased font size
                     fontFamily: 'Silkscreen',
@@ -81,6 +85,9 @@ class MainMenu extends StatelessWidget {
                   primary: Colors.transparent, // Make the button transparent
                   onPrimary: Colors.white, // Text color
                   minimumSize: Size(100, 60), // Adjust height
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0), // Make it square
+                  ),
                 ),
                 child: Text(
                   'TUTORIAL',
@@ -103,9 +110,12 @@ class MainMenu extends StatelessWidget {
                   primary: Colors.transparent, // Make the button transparent
                   onPrimary: Colors.white, // Text color
                   minimumSize: Size(100, 60), // Adjust height
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0), // Make it square
+                  ),
                 ),
                 child: Text(
-                  'QUIT GAME',
+                  'QUIT',
                   style: TextStyle(
                     fontSize: 28, // Increased font size
                     fontFamily: 'Silkscreen',
