@@ -136,6 +136,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Future<void> _readDataFromFile() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/saveData.txt');
+    print("okay first step mag rread tayo ng data from file");
 
     try {
       final savedData = await file.readAsString();
@@ -186,12 +187,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
+      print("ngek di gumana yung pag read, may error ata");
       print('Error reading data from file: $e');
     }
   }
 
   void _loadData() async {
     print("load pumasok");
+    print("okay nag load yung data pumasok na dito");
     String loadedData = await loadAsset();
     List<String> lines = loadedData.split('\n');
 
