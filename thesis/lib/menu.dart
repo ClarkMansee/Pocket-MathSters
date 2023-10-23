@@ -4,9 +4,47 @@ import 'package:path_provider/path_provider.dart';
 import 'package:thesis/tutorial.dart';
 import 'main.dart';
 import 'character.dart';
+import 'package:audioplayers/audioplayers.dart';
 
-class MainMenu extends StatelessWidget {
+class MainMenu extends StatefulWidget {
+  @override
+  _MainMenuState createState() => _MainMenuState();
+}
+
+class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
+  final AudioPlayer _audioPlayer = AudioPlayer();
   String selectedCharacter = "";
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _audioPlayer.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      _audioPlayer.resume();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _playMusic();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playMusic() async {
+    final source = AssetSource('music_menu.wav');
+    await _audioPlayer.setSource(source);
+    await _audioPlayer.play(source);
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
+  }
 
   Future<void> _readDataFromFile() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -69,6 +107,8 @@ class MainMenu extends StatelessWidget {
               // Buttons for different menu options
               ElevatedButton(
                 onPressed: () async {
+                  await _audioPlayer
+                      .pause(); // Pause the audio before navigating
                   await _readDataFromFile(); // Call the readData function
                   if (selectedCharacter == null || selectedCharacter == "") {
                     Navigator.push(

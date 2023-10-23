@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:thesis/splash.dart';
 
 import 'leaderboard.dart';
+import 'knn.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,26 +79,45 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int mediumQuestionCount = 0;
   int hardQuestionCount = 0;
 
+  //Initial difficulty
+  int initialDifficulty = 0;
+  int knnDifficulty = 0;
+
   List<List<String>> _options = [];
   List<String>? _selectedOption;
 
+  int _currentQuestionIndex = 0;
+  List<List<String>> _currentQuestionData = [];
+  int _currentMediumQuestionIndex = 0;
+  int _currentHardQuestionIndex = 0;
   int _currentEasyQuestionIndex = 0;
   List<int> _correctAnswerCounts = [0, 0, 0];
   int difficulty = 0;
+
+  // Declare these variables at the class level to maintain the overall totals
+  int _overallEasyQuestionCount = 0;
+  int _overallMediumQuestionCount = 0;
+  int _overallHardQuestionCount = 0;
+  List<int> _overallCorrectAnswerCounts = [0, 0, 0];
 
   //Initial Values
   String _currentEnemyAssetPath = "Kudango.png";
   String _currentBackground = "Normal_BG.png";
   String _currentEnemyLevel = "Normal Enemy 1";
   String _EnemyHurt = "Kudango_Hurt.png";
+  String _currentMusic = "music_normal1.wav";
   int _currentEnemyHP = 100;
   int _totalEnemyHP = 100;
   bool _showEnemyHurt = false;
+
+  ScrollController _scrollController = ScrollController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
     _loadData(); // Load data when the widget is initialized
+    _playMusic(_currentMusic);
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -119,6 +140,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
     _saveDataToFile(); // Call saveDataToFile when the widget is disposed
     WidgetsBinding.instance!.removeObserver(this); // Remove observer
     _timer.cancel(); // Cancel the timer
@@ -128,9 +152,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // The app is about to be closed (or paused in the background on iOS)
+      _audioPlayer.pause();
       _saveDataToFile();
     }
+  }
+
+  Future<void> _playMusic(String fileName) async {
+    final source = AssetSource(fileName);
+    await _audioPlayer.setSource(source);
+    await _audioPlayer.play(source);
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   Future<void> _readDataFromFile() async {
@@ -234,7 +265,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _hardDifficulties = hard;
 
     setState(() {
-      _randomizeDifficulty();
+      _randomizeDifficulty(knnDifficulty);
     });
   }
 
@@ -270,10 +301,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
   }
 
-  void _randomizeDifficulty() {
-    Random random = Random();
-    difficulty =
-        random.nextInt(3); // Generates a random number between 0, 1, or 2
+  void _randomizeDifficulty(int knnDifficulty) {
+    difficulty = knnDifficulty;
     print("diff: $difficulty");
 
     // Check if _currentDifficulty is empty before setting it
@@ -305,19 +334,25 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
   }
 
-  void _updateCounter(int value) {
+  Future<void> _updateCounter(int value) async {
+    int currentTotalQuestions =
+        easyQuestionCount + mediumQuestionCount + hardQuestionCount;
+    int currentCorrectAnswers = _correctAnswerCounts[0] +
+        _correctAnswerCounts[1] +
+        _correctAnswerCounts[2];
+
     switch (difficulty) {
       case 0:
         easyQuestionCount++;
-        print("Total easy: $easyQuestionCount");
+        _overallEasyQuestionCount++;
         break;
       case 1:
         mediumQuestionCount++;
-        print("Total medium: $mediumQuestionCount");
+        _overallMediumQuestionCount++;
         break;
       case 2:
         hardQuestionCount++;
-        print("Total hard: $hardQuestionCount");
+        _overallHardQuestionCount++;
         break;
     }
 
@@ -336,6 +371,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     } else {
       if (_currentEnemyHP - value > 0) {
         //If player is correct
+        _correctAnswerCounts[difficulty]++;
+        _overallCorrectAnswerCounts[difficulty]++;
         setState(() {
           _correctAnswerCounts[difficulty]++;
 
@@ -378,153 +415,237 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
     if (_playerHP <= 0 || _currentEnemyHP <= 0) {
       // Check if either player or enemy HP is 0 or less
-      setState(() {
-        _levelNum++; // Increment level
-        _playerHP = 100; // Reset player HP
+      _levelNum++; // Increment level
+      _playerHP = 100; // Reset player HP
+      int previousLevelTotalQuestions = currentTotalQuestions;
+      int previousLevelCorrectAnswers = currentCorrectAnswers;
 
-        // Define an array of level data where each element is a list
-        List<List<String>> levelData = [
-          //Level 1
-          [
-            '0',
-            'Normal_BG.png',
-            'Kudango.png',
-            'Normal Enemy 1',
-            '100',
-            'Kudango_Hurt.png'
-          ],
-          [
-            '1',
-            'Normal_BG.png',
-            'Impeach.png',
-            'Normal Enemy 2',
-            '100',
-            'Impeach_Hurt.png'
-          ],
-          [
-            '2',
-            'Normal_BG.png',
-            'Desserter.png',
-            'Normal Enemy 3',
-            '100',
-            'Desserter_Hurt.png'
-          ],
-          [
-            '3',
-            'MiniBoss_BG.png',
-            'Autognawta.png',
-            'Mini Boss 1',
-            '150',
-            'Autognawta_Hurt.png'
-          ],
-          //Level 2
-          [
-            '4',
-            'Normal_BG.png',
-            'Kudango.png',
-            'Normal Enemy 4',
-            '100',
-            'Kudango_Hurt.png'
-          ],
-          [
-            '5',
-            'Normal_BG.png',
-            'Impeach.png',
-            'Normal Enemy 5',
-            '100',
-            'Impeach_Hurt.png'
-          ],
-          [
-            '6',
-            'Normal_BG.png',
-            'Desserter.png',
-            'Normal Enemy 6',
-            '100',
-            'Desserter_Hurt.png'
-          ],
-          [
-            '7',
-            'MiniBoss_BG.png',
-            'Norxnor.png',
-            'Mini Boss 2',
-            '150',
-            'Norxnor_Hurt.png'
-          ],
-          //Level 3
-          [
-            '8',
-            'Normal_BG.png',
-            'Kudango.png',
-            'Normal Enemy 7',
-            '100',
-            'Kudango_Hurt.png'
-          ],
-          [
-            '9',
-            'Normal_BG.png',
-            'Impeach.png',
-            'Normal Enemy 8',
-            '100',
-            'Impeach_Hurt.png'
-          ],
-          [
-            '10',
-            'Normal_BG.png',
-            'Desserter.png',
-            'Normal Enemy 9',
-            '100',
-            'Desserter_Hurt.png'
-          ],
-          [
-            '11',
-            'MiniBoss_BG.png',
-            'Buffine.png',
-            'Mini Boss 3',
-            '150',
-            'Buffine_Hurt.png'
-          ],
-          [
-            '12',
-            'FinalBoss_BG.png',
-            'Chairnine.png',
-            'Final Boss',
-            '200',
-            'Chairnine.png'
-          ],
-          // Add more levels as needed
-        ];
+      int knnDifficulty =
+          await knn(previousLevelTotalQuestions, previousLevelCorrectAnswers);
 
-        if (_levelNum < levelData.length) {
-          List<String> currentLevelData = levelData[_levelNum];
-          _levelNum = int.parse(currentLevelData[0]);
-          _currentBackground = currentLevelData[1];
-          _currentEnemyAssetPath = currentLevelData[2];
-          _currentEnemyLevel = currentLevelData[3];
-          _currentEnemyHP = int.parse(currentLevelData[4]);
-          _totalEnemyHP = int.parse(currentLevelData[4]);
-          _EnemyHurt = currentLevelData[5];
-        } else {
-          _timer.cancel(); // Cancel the timer
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LeaderboardScreen(
-                correctAnswerCounts: _correctAnswerCounts,
-                totalEasyQuestions: easyQuestionCount,
-                totalMediumQuestions: mediumQuestionCount,
-                totalHardQuestions: hardQuestionCount,
-              ),
+      print("difficulty predicted by KNN is: $knnDifficulty");
+      print("previous level total question: $previousLevelTotalQuestions");
+      print(
+          "previous level total correct answers $previousLevelCorrectAnswers");
+
+      // Reset counters for next level
+      easyQuestionCount = 0;
+      mediumQuestionCount = 0;
+      hardQuestionCount = 0;
+      _correctAnswerCounts = [0, 0, 0];
+      _currentQuestionIndex = 0;
+
+      // Define an array of level data where each element is a list
+      List<List<String>> levelData = [
+        //Level 1
+        [
+          '0',
+          'Normal_BG.png',
+          'Kudango.png',
+          'Normal Enemy 1',
+          '100',
+          'Kudango_Hurt.png',
+          'music_normal1.wav'
+        ],
+        [
+          '1',
+          'Normal_BG.png',
+          'Impeach.png',
+          'Normal Enemy 2',
+          '100',
+          'Impeach_Hurt.png',
+          'music_normal2.wav'
+        ],
+        [
+          '2',
+          'Normal_BG.png',
+          'Desserter.png',
+          'Normal Enemy 3',
+          '100',
+          'Desserter_Hurt.png',
+          'music_normal3.wav'
+        ],
+        [
+          '3',
+          'MiniBoss_BG.png',
+          'Autognawta.png',
+          'Mini Boss 1',
+          '150',
+          'Autognawta_Hurt.png',
+          'music_miniboss1.wav'
+        ],
+        //Level 2
+        [
+          '4',
+          'Normal_BG.png',
+          'Kudango.png',
+          'Normal Enemy 4',
+          '100',
+          'Kudango_Hurt.png',
+          'music_normal1.wav'
+        ],
+        [
+          '5',
+          'Normal_BG.png',
+          'Impeach.png',
+          'Normal Enemy 5',
+          '100',
+          'Impeach_Hurt.png',
+          'music_normal2.wav'
+        ],
+        [
+          '6',
+          'Normal_BG.png',
+          'Desserter.png',
+          'Normal Enemy 6',
+          '100',
+          'Desserter_Hurt.png',
+          'music_normal3.wav'
+        ],
+        [
+          '7',
+          'MiniBoss_BG.png',
+          'Norxnor.png',
+          'Mini Boss 2',
+          '150',
+          'Norxnor_Hurt.png',
+          'music_miniboss2.wav'
+        ],
+        //Level 3
+        [
+          '8',
+          'Normal_BG.png',
+          'Kudango.png',
+          'Normal Enemy 7',
+          '100',
+          'Kudango_Hurt.png',
+          'music_normal1.wav'
+        ],
+        [
+          '9',
+          'Normal_BG.png',
+          'Impeach.png',
+          'Normal Enemy 8',
+          '100',
+          'Impeach_Hurt.png',
+          'music_normal2.wav'
+        ],
+        [
+          '10',
+          'Normal_BG.png',
+          'Desserter.png',
+          'Normal Enemy 9',
+          '100',
+          'Desserter_Hurt.png',
+          'music_normal3.wav'
+        ],
+        [
+          '11',
+          'MiniBoss_BG.png',
+          'Buffine.png',
+          'Mini Boss 3',
+          '150',
+          'Buffine_Hurt.png',
+          'music_miniboss3.wav'
+        ],
+        [
+          '12',
+          'FinalBoss_BG.png',
+          'Chairnine.png',
+          'Final Boss',
+          '200',
+          'Chairnine.png',
+          'music_finalboss.wav'
+        ],
+        // Add more levels as needed
+      ];
+
+      if (_levelNum < levelData.length) {
+        List<String> currentLevelData = levelData[_levelNum];
+        _levelNum = int.parse(currentLevelData[0]);
+        _currentBackground = currentLevelData[1];
+        _currentEnemyAssetPath = currentLevelData[2];
+        _currentEnemyLevel = currentLevelData[3];
+        _currentEnemyHP = int.parse(currentLevelData[4]);
+        _totalEnemyHP = int.parse(currentLevelData[4]);
+        _EnemyHurt = currentLevelData[5];
+        _currentMusic = currentLevelData[6];
+        _playMusic(_currentMusic);
+      } else {
+        _currentQuestionIndex++;
+        _timer.cancel(); // Cancel the timer
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LeaderboardScreen(
+              correctAnswerCounts: _overallCorrectAnswerCounts,
+              totalEasyQuestions: _overallEasyQuestionCount,
+              totalMediumQuestions: _overallMediumQuestionCount,
+              totalHardQuestions: _overallHardQuestionCount,
             ),
-          );
-        }
+          ),
+        );
+      }
+      print("Current Level: ${_levelNum + 1}");
+      setState(() {
+        _randomizeDifficulty(knnDifficulty);
+      });
+    } else {
+      setState(() {
+        _randomizeDifficulty(
+            difficulty); // Default to easy for levels after the first
       });
     }
-
-    print("Current Level: ${_levelNum + 1}");
-
     setState(() {
-      _randomizeDifficulty();
+      _initializeOptions();
     });
+  }
+
+  Future<int> knn(int totalQuestions, int correctAnswers) async {
+    final knn = KNN(3);
+
+    // Load your dataset
+    final data = await rootBundle.loadString('assets/Pre-Test.csv');
+    final rows = data.split('\n');
+
+    final List<List<double>> X = [];
+    final List<int> y = [];
+
+    for (final row in rows) {
+      final values =
+          row.split(',').map((value) => double.tryParse(value) ?? 0.0).toList();
+      if (values.length >= 2 && values[1] != 0.0) {
+        final percentage = (values[0] / values[1]) * 100;
+        final skillLevel = mapPercentageToSkillLevel(percentage);
+        X.add([percentage]);
+        y.add(skillLevel);
+      }
+    }
+
+    // Split the data into training and testing sets
+    final int splitIndex = (X.length * 0.8).floor();
+    final List<List<double>> X_train = X.sublist(0, splitIndex);
+    final List<int> y_train = y.sublist(0, splitIndex);
+
+    // Train the KNN model
+    knn.fit(X_train, y_train);
+
+    // Predict the skill level for a new score
+    final double newPercentage = (correctAnswers / totalQuestions) * 100;
+    final int predictedSkillLevel = knn.predict([newPercentage]);
+
+    print('Predicted Skill Level: $predictedSkillLevel');
+    return predictedSkillLevel;
+  }
+
+  int mapPercentageToSkillLevel(double percentage) {
+    if (percentage < 50) {
+      return 0; // Easy
+    } else if (percentage >= 50 && percentage < 75) {
+      return 1; // Medium
+    } else {
+      return 2; // Hard
+    }
   }
 
   int newIndex = 0;
@@ -548,7 +669,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty(knnDifficulty);
         }
         break;
       case 1:
@@ -559,7 +680,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty(knnDifficulty);
         }
         break;
       case 2:
@@ -570,7 +691,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty(knnDifficulty);
         }
         break;
       default:
@@ -663,347 +784,334 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   //-------------Layout part of the code----------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/$_currentBackground"),
-            fit: BoxFit.cover,
+    return WillPopScope(
+      onWillPop: () async {
+        return false; // This disables back navigation
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("assets/$_currentBackground"),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ElevatedButton(
-                    //   onPressed: () {
-                    //     _saveDataToFile();
-                    //     SystemNavigator.pop(); // This will close the app
-                    //   },
-                    //   style: ElevatedButton.styleFrom(
-                    //     primary: Colors
-                    //         .red, // Customize the button color as you like
-                    //     onPrimary: Colors.white,
-                    //   ),
-                    //   child: const Text(
-                    //     'Close Game',
-                    //     style: TextStyle(
-                    //       fontFamily: 'Silkscreen',
-                    //     ),
-                    //   ),
-                    // ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Image.asset(
-                            'assets/HP_Banner.png',
-                            fit: BoxFit.cover,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: EdgeInsets.only(left: 50.0),
-                                  child: Text(
-                                    _currentEnemyLevel,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Silkscreen',
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '$_currentEnemyHP / $_totalEnemyHP',
-                                style: TextStyle(
-                                  fontFamily: 'Silkscreen',
-                                  color: Colors.red,
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Expanded(
-                    //   child: ElevatedButton(
-                    //     onPressed: () {
-                    //       Navigator.push(
-                    //         context,
-                    //         MaterialPageRoute(
-                    //           builder: (context) => LeaderboardScreen(
-                    //             correctAnswerCount: _correctAnswerCount,
-                    //           ),
-                    //         ),
-                    //       );
-                    //     },
-                    //     style: ElevatedButton.styleFrom(
-                    //       primary: Colors
-                    //           .blue, // Customize the button color as you like
-                    //       onPrimary: Colors.white,
-                    //     ),
-                    //     child: const Text(
-                    //       'Leaderboard',
-                    //       style: TextStyle(
-                    //         fontFamily: 'Silkscreen',
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: Colors.black,
-                                  width: 2.0,
-                                ),
-                              ),
-                              margin: const EdgeInsets.all(10.0),
-                              alignment: Alignment.center,
-                              child: Text(
-                                _currentDifficulty.isNotEmpty &&
-                                        _currentDifficulty[0].isNotEmpty
-                                    ? _currentDifficulty[
-                                        _currentEasyQuestionIndex][0][0]
-                                    : 'No question available',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Silkscreen',
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0),
-                      child: Stack(
-                        children: [
-                          // Black text with a slight offset
-                          Text(
-                            'Time: $_remainTime seconds',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontFamily: 'Silkscreen',
-                              foreground: Paint()
-                                ..style = PaintingStyle.stroke
-                                ..strokeWidth =
-                                    2 // Adjust the stroke width as needed
-                                ..color = Colors.black,
-                            ),
-                          ),
-                          // White text over the black text
-                          Text(
-                            'Time: $_remainTime seconds',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontFamily: 'Silkscreen',
-                              shadows: [
-                                // Add a drop shadow
-                                Shadow(
-                                  blurRadius: 20.0,
-                                  color: Colors.black.withOpacity(1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin: EdgeInsets.only(left: 150.0),
-                              child: Image.asset(
-                                _showEnemyHurt
-                                    ? "assets/$_EnemyHurt"
-                                    : "assets/$_currentEnemyAssetPath",
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Image.asset(
-                              'assets/${widget.selectedCharacter}',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(
-                              left: 100.0,
-                              top: 5,
-                            ),
-                            child: Image.asset(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Image.asset(
                               'assets/HP_Banner.png',
                               fit: BoxFit.cover,
                             ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Align(
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(left: 50.0),
+                                    child: Text(
+                                      _currentEnemyLevel,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$_currentEnemyHP / $_totalEnemyHP',
+                                  style: TextStyle(
+                                    fontFamily: 'Silkscreen',
+                                    color: Colors.red,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: Colors.black,
+                                    width: 2.0,
+                                  ),
+                                ),
+                                // Reduced the top and bottom margin to make the distance smaller
+                                margin: const EdgeInsets.fromLTRB(
+                                    10.0, 5.0, 10.0, 5.0),
                                 alignment: Alignment.center,
-                                child: Padding(
-                                  padding: EdgeInsets.only(left: 0.0),
-                                  child: Text(
-                                    'Player',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Silkscreen',
+                                child: Scrollbar(
+                                  thickness:
+                                      5.0, // Adjust the thickness of the scrollbar
+                                  radius: Radius.circular(
+                                      10.0), // Optional: to give the scrollbar rounded corners
+                                  isAlwaysShown: true,
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      _currentDifficulty.isNotEmpty &&
+                                              _currentDifficulty[0].isNotEmpty
+                                          ? _currentDifficulty[
+                                              _currentEasyQuestionIndex][0][0]
+                                          : 'No question available',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 20,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                      maxLines: null,
                                     ),
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 100.0),
-                                child: Text(
-                                  '$_playerHP /  100',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 20,
-                                    fontFamily: 'Silkscreen',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[0]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
                             ),
-                            child: Text(
-                              _options[0][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[1]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[1][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[2]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[2][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[3]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[3][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _confirmAnswer,
-                      style: ElevatedButton.styleFrom(
-                        primary: Colors.orange,
-                        onPrimary: Colors.black,
-                      ),
-                      child: const Text(
-                        'CONFIRM?',
-                        style: TextStyle(
-                          fontFamily: 'Silkscreen',
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20.0),
+                        child: Stack(
+                          children: [
+                            // Black text with a slight offset
+                            Text(
+                              'Time: $_remainTime seconds',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontFamily: 'Silkscreen',
+                                foreground: Paint()
+                                  ..style = PaintingStyle.stroke
+                                  ..strokeWidth =
+                                      2 // Adjust the stroke width as needed
+                                  ..color = Colors.black,
+                              ),
+                            ),
+                            // White text over the black text
+                            Text(
+                              'Time: $_remainTime seconds',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontFamily: 'Silkscreen',
+                                shadows: [
+                                  // Add a drop shadow
+                                  Shadow(
+                                    blurRadius: 20.0,
+                                    color: Colors.black.withOpacity(1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                margin: EdgeInsets.only(left: 150.0),
+                                child: Image.asset(
+                                  _showEnemyHurt
+                                      ? "assets/$_EnemyHurt"
+                                      : "assets/$_currentEnemyAssetPath",
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: Image.asset(
+                                'assets/${widget.selectedCharacter}',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(
+                                left: 100.0,
+                                top: 5,
+                              ),
+                              child: Image.asset(
+                                'assets/HP_Banner.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Align(
+                                  alignment: Alignment.center,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(left: 0.0),
+                                    child: Text(
+                                      'Player',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 100.0),
+                                  child: Text(
+                                    '$_playerHP /  100',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 20,
+                                      fontFamily: 'Silkscreen',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[0]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[0][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[0][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[1]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[1][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[1][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[2]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[2][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[2][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[3]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[3][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[3][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _confirmAnswer,
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.orange,
+                          onPrimary: Colors.black,
+                        ),
+                        child: const Text(
+                          'CONFIRM?',
+                          style: TextStyle(
+                            fontFamily: 'Silkscreen',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
