@@ -53,6 +53,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  Map<String, Map<String, double>> Q = {};
+  double alpha = 0.1;
+  double gamma = 0.9;
+  double epsilon = 0.1;
+  String? state;
+  String? action;
+  int counter = 0;
+
   String selectedCharacter = "";
   bool _hasReadDataFromFile = false;
 
@@ -71,6 +79,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<int> _usedEasyQuestionIndices = [];
   List<int> _usedMediumQuestionIndices = [];
   List<int> _usedHardQuestionIndices = [];
+
+  String currentDifficulty = 'easy';
 
   //Total Question counter
   int easyQuestionCount = 0;
@@ -192,6 +202,92 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
   }
 
+  void update(String state, String action, double reward, String nextState,
+      String nextAction) {
+    //for sarsa
+    Q[state] ??= {'right': 0.0, 'wrong': 0.0};
+    Q[nextState] ??= {'right': 0.0, 'wrong': 0.0};
+    Q[state]![action] = Q[state]![action]! +
+        alpha *
+            (reward + gamma * Q[nextState]![nextAction]! - Q[state]![action]!);
+  }
+
+  void setStateAction(String state, String action) {
+    this.state = state;
+    this.action = action;
+  }
+
+  int sarsaDifficulty() {
+    List<String> difficulties = ['easy', 'medium', 'hard'];
+    Map<String, double> deductedQValues = {};
+
+    String action = "";
+    if (int.parse(_selectedOption![1]) > 0) {
+      action = 'right';
+    } else {
+      action = 'wrong';
+    }
+
+    // Calculate deducted Q-values
+    for (var difficulty in difficulties) {
+      double rightQValue = Q[difficulty]?['right'] ?? 0.0;
+      double wrongQValue = (Q[difficulty]?['wrong'] ?? 0.0).abs();
+      deductedQValues[difficulty] = rightQValue - wrongQValue;
+    }
+
+    // Find difficulty with the highest right and deducted Q-values
+    String maxRightDifficulty = difficulties.reduce((value, element) =>
+        (Q[value]?['right'] ?? 0.0) > (Q[element]?['right'] ?? 0.0)
+            ? value
+            : element);
+    String maxDeductedDifficulty = difficulties.reduce((value, element) =>
+        deductedQValues[value]! > deductedQValues[element]! ? value : element);
+
+    print("curr: $currentDifficulty");
+    print("dedu: $maxDeductedDifficulty");
+    print("right: $maxRightDifficulty");
+
+    // Print the Q-table
+    print("Q-table: $Q");
+
+    // Determine next difficulty based on given conditions
+    int nextDifficultyIndex;
+    if (maxRightDifficulty == maxDeductedDifficulty) {
+      if (currentDifficulty == maxRightDifficulty && action == 'right') {
+        nextDifficultyIndex = min(difficulties.indexOf(currentDifficulty) + 1,
+            difficulties.length - 1);
+      } else if (difficulties.indexOf(currentDifficulty) >
+          difficulties.indexOf(maxRightDifficulty)) {
+        if (action == 'right') {
+          nextDifficultyIndex = difficulties.indexOf(currentDifficulty);
+        } else {
+          nextDifficultyIndex = difficulties.indexOf(maxRightDifficulty);
+        }
+      } else {
+        nextDifficultyIndex = difficulties.indexOf(currentDifficulty);
+      }
+    } else if (currentDifficulty == maxRightDifficulty) {
+      if (currentDifficulty == maxDeductedDifficulty) {
+        // Ask a higher difficulty question if possible
+        nextDifficultyIndex = min(difficulties.indexOf(currentDifficulty) + 1,
+            difficulties.length - 1);
+      } else {
+        // Ask a lower difficulty question if possible
+        nextDifficultyIndex =
+            max(difficulties.indexOf(currentDifficulty) - 1, 0);
+      }
+    } else if (currentDifficulty == maxDeductedDifficulty) {
+      // Ask same difficulty question
+      nextDifficultyIndex = difficulties.indexOf(currentDifficulty);
+    } else {
+      // Ask a lower difficulty question if possible
+      nextDifficultyIndex = max(difficulties.indexOf(currentDifficulty) - 1, 0);
+    }
+
+    print(nextDifficultyIndex);
+    return nextDifficultyIndex;
+  }
+
   void _loadData() async {
     print("load pumasok");
     print("okay nag load yung data pumasok na dito");
@@ -234,7 +330,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _hardDifficulties = hard;
 
     setState(() {
-      _randomizeDifficulty();
+      _randomizeDifficulty('no');
     });
   }
 
@@ -270,11 +366,79 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
   }
 
-  void _randomizeDifficulty() {
-    Random random = Random();
-    difficulty =
-        random.nextInt(3); // Generates a random number between 0, 1, or 2
-    print("diff: $difficulty");
+  String chooseAction(String state) {
+    if (Random().nextDouble() < 0.4) {
+      // 60% chance
+      return 'wrong';
+    } else {
+      return 'right';
+    }
+  }
+
+  void _randomizeDifficulty(String isReroll) {
+    double reward = 0;
+    String diff = "";
+    String nextdiff = "";
+    String nextAction = "";
+
+    switch (difficulty) {
+      case 0:
+        diff = 'easy';
+        reward = 10;
+        break;
+      case 1:
+        diff = 'medium';
+        reward = 15;
+        break;
+      case 2:
+        diff = 'hard';
+        reward = 30;
+        break;
+    }
+
+    if (isReroll == 'no') {
+      String action = "";
+      if (_selectedOption != null) {
+        if (int.parse(_selectedOption![1]) > 0) {
+          action = 'right';
+        } else {
+          action = 'wrong';
+          reward = -reward;
+        }
+      } else {
+        action = 'right';
+      }
+
+      if (counter > 2) {
+        difficulty =
+            sarsaDifficulty(); // Generates a random number between 0, 1, or 2'
+        print("sarsa");
+      } else {
+        difficulty = counter;
+      }
+
+      switch (difficulty) {
+        case 0:
+          nextdiff = 'easy';
+          break;
+        case 1:
+          nextdiff = 'medium';
+          break;
+        case 2:
+          nextdiff = 'hard';
+          break;
+      }
+
+      nextAction = chooseAction(nextdiff);
+
+      print(
+          "diff: $diff, action: $action, reward: $reward, nextdiff: $nextdiff, nextaction: $nextAction");
+      update(diff, action, reward, nextdiff, nextAction);
+
+      print("diff: $difficulty");
+
+      currentDifficulty = nextdiff;
+    }
 
     // Check if _currentDifficulty is empty before setting it
     if (_easyDifficulties.isEmpty ||
@@ -299,6 +463,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             _easyDifficulties; // Default to Easy if something goes wrong
         break;
     }
+
+    counter++;
 
     setState(() {
       _initializeOptions();
@@ -523,7 +689,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     print("Current Level: ${_levelNum + 1}");
 
     setState(() {
-      _randomizeDifficulty();
+      _randomizeDifficulty('no');
     });
   }
 
@@ -548,7 +714,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty('yes');
         }
         break;
       case 1:
@@ -559,7 +725,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty('yes');
         }
         break;
       case 2:
@@ -570,7 +736,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty();
+          _randomizeDifficulty('yes');
         }
         break;
       default:
