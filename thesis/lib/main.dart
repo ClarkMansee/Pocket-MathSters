@@ -215,6 +215,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('playerHP')) {
           _playerHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('totalenemyHP')) {
+          _totalEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyAsset')) {
+          _currentEnemyAssetPath = line.split(': ')[1];
+        } else if (line.startsWith('background')) {
+          _currentBackground = line.split(': ')[1];
+        } else if (line.startsWith('enemyLevel')) {
+          _currentEnemyLevel = line.split(': ')[1];
+        } else if (line.startsWith('enemyHurt')) {
+          _EnemyHurt = line.split(': ')[1];
         }
       }
     } catch (e) {
@@ -284,7 +294,12 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Level: $_levelNum\n'
               'enemyHP: $_currentEnemyHP\n'
               'playerHP: $_playerHP\n'
-              'Character: ${widget.selectedCharacter}');
+              'Character: ${widget.selectedCharacter}\n'
+              'totalenemyHP: $_totalEnemyHP\n'
+              'enemyAsset: $_currentEnemyAssetPath\n'
+              'background: $_currentBackground\n'
+              'enemyLevel: $_currentEnemyLevel\n'
+              'enemyHurt: $_EnemyHurt');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
