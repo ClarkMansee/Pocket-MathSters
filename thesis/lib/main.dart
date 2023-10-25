@@ -194,12 +194,38 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('playerHP')) {
           _playerHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Q-table:')) {
+          Map<String, Map<String, double>> Q = parseQTable(line.split(': ')[1]);
+          // Now, 'Q' contains the updated Q-table data
         }
       }
     } catch (e) {
-      print("ngek di gumana yung pag read, may error ata");
       print('Error reading data from file: $e');
     }
+  }
+
+  Map<String, Map<String, double>> parseQTable(String content) {
+    Map<String, Map<String, double>> Q = {};
+
+    // Remove curly braces and split into individual entries
+    List<String> entries =
+        content.replaceAll(RegExp(r'[{}]'), '').split(RegExp(r',\s*'));
+
+    for (String entry in entries) {
+      List<String> parts = entry.split(RegExp(r':\s*'));
+      String key = parts[0].trim();
+      List<String> values = parts[1].split(RegExp(r',\s*'));
+
+      Map<String, double> innerMap = {};
+      for (String value in values) {
+        List<String> keyValue = value.split(RegExp(r':\s*'));
+        innerMap[keyValue[0].trim()] = double.parse(keyValue[1].trim());
+      }
+
+      Q[key] = innerMap;
+    }
+
+    return Q;
   }
 
   void update(String state, String action, double reward, String nextState,
@@ -289,8 +315,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void _loadData() async {
-    print("load pumasok");
-    print("okay nag load yung data pumasok na dito");
     String loadedData = await loadAsset();
     List<String> lines = loadedData.split('\n');
 
@@ -349,7 +373,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               'Level: $_levelNum\n'
               'enemyHP: $_currentEnemyHP\n'
               'playerHP: $_playerHP\n'
-              'Character: ${widget.selectedCharacter}');
+              'Character: ${widget.selectedCharacter}\n'
+              'Q-table: $Q');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
@@ -409,7 +434,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         action = 'right';
       }
 
-      if (counter > 2) {
+      if (counter > 2 || Q.isNotEmpty) {
         difficulty =
             sarsaDifficulty(); // Generates a random number between 0, 1, or 2'
         print("sarsa");
