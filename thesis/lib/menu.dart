@@ -174,30 +174,6 @@ class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
                 ),
               ),
               SizedBox(height: 10), // Increased spacing
-
-              ElevatedButton(
-                onPressed: () {
-                  // Exit the game
-                  // Example: SystemNavigator.pop();
-                  // Note: There isn't a direct exit method in Flutter for all platforms.
-                  // You can consider using a confirmation dialog before exiting.
-                },
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.transparent, // Make the button transparent
-                  onPrimary: Colors.white, // Text color
-                  minimumSize: Size(100, 60), // Adjust height
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0), // Make it square
-                  ),
-                ),
-                child: Text(
-                  'QUIT',
-                  style: TextStyle(
-                    fontSize: 28, // Increased font size
-                    fontFamily: 'Silkscreen',
-                  ),
-                ),
-              ),
             ],
           ),
         ),

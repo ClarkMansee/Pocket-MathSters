@@ -80,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int hardQuestionCount = 0;
 
   //Initial difficulty
-  int initialDifficulty = 0;
+  int difficulty = 0;
   int knnDifficulty = 0;
 
   List<List<String>> _options = [];
@@ -92,7 +92,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int _currentHardQuestionIndex = 0;
   int _currentEasyQuestionIndex = 0;
   List<int> _correctAnswerCounts = [0, 0, 0];
-  int difficulty = 0;
 
   // Declare these variables at the class level to maintain the overall totals
   int _overallEasyQuestionCount = 0;
@@ -139,13 +138,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _scrollController.dispose();
     _audioPlayer.stop();
     _audioPlayer.dispose();
-    _saveDataToFile(); // Call saveDataToFile when the widget is disposed
-    WidgetsBinding.instance!.removeObserver(this); // Remove observer
-    _timer.cancel(); // Cancel the timer
+    await _saveDataToFile(); // Wait for data to be saved
+    WidgetsBinding.instance!.removeObserver(this);
+    _timer.cancel();
     super.dispose();
   }
 
@@ -173,16 +172,71 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
 
+      // if (savedData != null && savedData != "") {
+      //   _overallCorrectAnswerCounts = [];
+      // }
       // Parse the saved data and update variables
       final lines = savedData.split('\n');
       for (final line in lines) {
         if (line.startsWith('Easy Correct answers:')) {
+          print("WONGW1");
           _correctAnswerCounts[0] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Medium Correct answers:')) {
+          print("WONGW2");
           _correctAnswerCounts[1] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Hard Correct answers:')) {
+          print("WONGW3");
           _correctAnswerCounts[2] = int.parse(line.split(': ')[1]);
+          print(_correctAnswerCounts);
+        } else if (line.startsWith('Level:')) {
+          print("WONGW7");
+          _levelNum = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyHP:')) {
+          print("WONGW8");
+          _currentEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('playerHP:')) {
+          print("WONGW9");
+          _playerHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('totalenemyHP:')) {
+          print("WONGW10");
+          _totalEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyAsset:')) {
+          print("WONGW11");
+          _currentEnemyAssetPath = line.split(': ')[1];
+        } else if (line.startsWith('background:')) {
+          print("WONGW12");
+          _currentBackground = line.split(': ')[1];
+        } else if (line.startsWith('enemyLevel:')) {
+          print("WONGW13");
+          _currentEnemyLevel = line.split(': ')[1];
+        } else if (line.startsWith('enemyHurt:')) {
+          print("WONGW14");
+          _EnemyHurt = line.split(': ')[1];
+        } else if (line.startsWith('currentMusic:')) {
+          print("tite100");
+          _currentMusic = line.split(': ')[1];
+        } else if (line.startsWith('overallEasyCorrectAnswerCount:')) {
+          print("WONGW15");
+          _overallCorrectAnswerCounts[0] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallMediumCorrectAnswerCount:')) {
+          print("WONGW16");
+          _overallCorrectAnswerCounts[1] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallHardCorrectAnswerCount:')) {
+          print("WONGW17");
+          _overallCorrectAnswerCounts[2] = int.parse(line.split(': ')[1]);
+          print(_overallCorrectAnswerCounts);
+        } else if (line.startsWith('overallEasyQuestionCount:')) {
+          print("tite");
+          print(int.parse(line.split(': ')[1]));
+          _overallEasyQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallMediumQuestionCount:')) {
+          _overallMediumQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallHardQuestionCount:')) {
+          _overallHardQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('difficulty:')) {
+          difficulty = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Used Easy Questions:')) {
+          print("WONGW4");
           _usedEasyQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -192,6 +246,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .map(int.parse),
           );
         } else if (line.startsWith('Used Medium Questions:')) {
+          print("WONGW5");
           _usedMediumQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -201,6 +256,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .map(int.parse),
           );
         } else if (line.startsWith('Used Hard Questions:')) {
+          print("WONGW6");
           _usedHardQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -209,23 +265,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .split(', ')
                 .map(int.parse),
           );
-        } else if (line.startsWith('Level:')) {
-          _levelNum = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('enemyHP')) {
-          _currentEnemyHP = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('playerHP')) {
-          _playerHP = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('totalenemyHP')) {
-          _totalEnemyHP = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('enemyAsset')) {
-          _currentEnemyAssetPath = line.split(': ')[1];
-        } else if (line.startsWith('background')) {
-          _currentBackground = line.split(': ')[1];
-        } else if (line.startsWith('enemyLevel')) {
-          _currentEnemyLevel = line.split(': ')[1];
-        } else if (line.startsWith('enemyHurt')) {
-          _EnemyHurt = line.split(': ')[1];
         }
+        print("overall correct answer: $_overallCorrectAnswerCounts");
+        print("overall easy correct answer: $_overallEasyQuestionCount");
+        print("overall medium correct answer: $_overallMediumQuestionCount");
+        print("overall hard correct answer: $_overallHardQuestionCount");
       }
     } catch (e) {
       print("ngek di gumana yung pag read, may error ata");
@@ -284,22 +328,30 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     final file = File('${directory.path}/saveData.txt');
 
     try {
-      await file
-          .writeAsString('Easy Correct answers: ${_correctAnswerCounts[0]}\n'
-              'Medium Correct answers: ${_correctAnswerCounts[1]}\n'
-              'Hard Correct answers: ${_correctAnswerCounts[2]}\n'
-              'Used Easy Questions: $_usedEasyQuestionIndices\n'
-              'Used Medium Questions: $_usedMediumQuestionIndices\n'
-              'Used Hard Questions: $_usedHardQuestionIndices\n'
-              'Level: $_levelNum\n'
-              'enemyHP: $_currentEnemyHP\n'
-              'playerHP: $_playerHP\n'
-              'Character: ${widget.selectedCharacter}\n'
-              'totalenemyHP: $_totalEnemyHP\n'
-              'enemyAsset: $_currentEnemyAssetPath\n'
-              'background: $_currentBackground\n'
-              'enemyLevel: $_currentEnemyLevel\n'
-              'enemyHurt: $_EnemyHurt');
+      await file.writeAsString(
+          'Easy Correct answers: ${_correctAnswerCounts[0]}\n'
+          'Medium Correct answers: ${_correctAnswerCounts[1]}\n'
+          'Hard Correct answers: ${_correctAnswerCounts[2]}\n'
+          'Level: $_levelNum\n'
+          'enemyHP: $_currentEnemyHP\n'
+          'playerHP: $_playerHP\n'
+          'Character: ${widget.selectedCharacter}\n'
+          'totalenemyHP: $_totalEnemyHP\n'
+          'enemyAsset: $_currentEnemyAssetPath\n'
+          'background: $_currentBackground\n'
+          'enemyLevel: $_currentEnemyLevel\n'
+          'enemyHurt: $_EnemyHurt\n'
+          'currentMusic: $_currentMusic\n'
+          'overallEasyCorrectAnswerCount: ${_overallCorrectAnswerCounts[0]}\n'
+          'overallMediumCorrectAnswerCount: ${_overallCorrectAnswerCounts[1]}\n'
+          'overallHardCorrectAnswerCount: ${_overallCorrectAnswerCounts[2]}\n'
+          'overallEasyQuestionCount: $_overallEasyQuestionCount\n'
+          'overallMediumQuestionCount: $_overallMediumQuestionCount\n'
+          'overallHardQuestionCount: $_overallHardQuestionCount\n'
+          'difficulty: $difficulty\n'
+          'Used Easy Questions: $_usedEasyQuestionIndices\n'
+          'Used Medium Questions: $_usedMediumQuestionIndices\n'
+          'Used Hard Questions: $_usedHardQuestionIndices\n');
       print('Data saved to file successfully');
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
@@ -389,8 +441,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         _correctAnswerCounts[difficulty]++;
         _overallCorrectAnswerCounts[difficulty]++;
         setState(() {
-          _correctAnswerCounts[difficulty]++;
-
           _currentEnemyHP -= value;
           _showEnemyHurt = true;
         });
@@ -398,6 +448,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         print("Easy Correct: ${_correctAnswerCounts[0]}");
         print("Medium Correct: ${_correctAnswerCounts[1]}");
         print("Hard Correct: ${_correctAnswerCounts[2]}");
+
+        print("OVERALL CORRECT ANSWER COUNTS: $_overallCorrectAnswerCounts");
+        print("OVERALL CORRECT ANSWER COUNTS: $_overallEasyQuestionCount");
+        print("OVERALL CORRECT ANSWER COUNTS: $_overallMediumQuestionCount");
+        print("OVERALL CORRECT ANSWER COUNTS: $_overallHardQuestionCount");
 
         // Reset _showEnemyHurt after a delay (e.g., 2 seconds).
         Future.delayed(Duration(seconds: 1), () {
@@ -672,9 +727,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       _currentDifficulty = _easyDifficulties;
       print("pumasok sa empty");
     }
-
-    print("curr diff: $_currentDifficulty");
-
     switch (difficulty) {
       case 0:
         if (_usedEasyQuestionIndices.length != _easyDifficulties.length) {
