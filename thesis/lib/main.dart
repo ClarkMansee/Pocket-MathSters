@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:thesis/splash.dart';
 
 import 'leaderboard.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const MyApp());
@@ -63,6 +64,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   String selectedCharacter = "";
   bool _hasReadDataFromFile = false;
+  bool gameFinished = false;
 
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
@@ -99,14 +101,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   String _currentBackground = "Normal_BG.png";
   String _currentEnemyLevel = "Normal Enemy 1";
   String _EnemyHurt = "Kudango_Hurt.png";
+  String _currentMusic = "music_normal1.wav";
   int _currentEnemyHP = 100;
   int _totalEnemyHP = 100;
   bool _showEnemyHurt = false;
+
+  ScrollController _scrollController = ScrollController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
     _loadData(); // Load data when the widget is initialized
+    _playMusic(_currentMusic);
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -128,19 +135,30 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   @override
-  void dispose() {
-    _saveDataToFile(); // Call saveDataToFile when the widget is disposed
-    WidgetsBinding.instance!.removeObserver(this); // Remove observer
-    _timer.cancel(); // Cancel the timer
+  Future<void> dispose() async {
+    _scrollController.dispose();
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
+    await _saveDataToFile(); // Wait for data to be saved
+    WidgetsBinding.instance!.removeObserver(this);
+    _timer.cancel();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // The app is about to be closed (or paused in the background on iOS)
+      _audioPlayer.pause();
       _saveDataToFile();
+      _timer.cancel(); // Pause the timer
     }
+  }
+
+  Future<void> _playMusic(String fileName) async {
+    final source = AssetSource(fileName);
+    await _audioPlayer.setSource(source);
+    await _audioPlayer.play(source);
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   Future<void> _readDataFromFile() async {
@@ -161,6 +179,32 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _correctAnswerCounts[1] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Hard Correct answers:')) {
           _correctAnswerCounts[2] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('Level:')) {
+          _levelNum = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyHP:')) {
+          _currentEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('playerHP:')) {
+          _playerHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('totalenemyHP:')) {
+          _totalEnemyHP = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('enemyAsset:')) {
+          _currentEnemyAssetPath = line.split(': ')[1];
+        } else if (line.startsWith('background:')) {
+          _currentBackground = line.split(': ')[1];
+        } else if (line.startsWith('enemyLevel:')) {
+          _currentEnemyLevel = line.split(': ')[1];
+        } else if (line.startsWith('enemyHurt:')) {
+          _EnemyHurt = line.split(': ')[1];
+        } else if (line.startsWith('currentMusic:')) {
+          _currentMusic = line.split(': ')[1];
+        } else if (line.startsWith('gameFinished:')) {
+          gameFinished = line.split(': ')[1].toLowerCase() == 'true';
+        } else if (line.startsWith('easyQuestionCount:')) {
+          easyQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('mediumQuestionCount:')) {
+          mediumQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('hardQuestionCount:')) {
+          hardQuestionCount = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Used Easy Questions:')) {
           _usedEasyQuestionIndices.addAll(
             line
@@ -188,12 +232,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .split(', ')
                 .map(int.parse),
           );
-        } else if (line.startsWith('Level:')) {
-          _levelNum = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('enemyHP')) {
-          _currentEnemyHP = int.parse(line.split(': ')[1]);
-        } else if (line.startsWith('playerHP')) {
-          _playerHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Q-table:')) {
           Map<String, Map<String, double>> Q = parseQTable(line.split(': ')[1]);
           // Now, 'Q' contains the updated Q-table data
@@ -202,6 +240,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     } catch (e) {
       print('Error reading data from file: $e');
     }
+    print("easy question count: $easyQuestionCount");
+    print("medium question count: $mediumQuestionCount");
+    print("hard question count: $hardQuestionCount");
   }
 
   Map<String, Map<String, double>> parseQTable(String content) {
@@ -367,17 +408,25 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           .writeAsString('Easy Correct answers: ${_correctAnswerCounts[0]}\n'
               'Medium Correct answers: ${_correctAnswerCounts[1]}\n'
               'Hard Correct answers: ${_correctAnswerCounts[2]}\n'
-              'Used Easy Questions: $_usedEasyQuestionIndices\n'
-              'Used Medium Questions: $_usedMediumQuestionIndices\n'
-              'Used Hard Questions: $_usedHardQuestionIndices\n'
               'Level: $_levelNum\n'
               'enemyHP: $_currentEnemyHP\n'
               'playerHP: $_playerHP\n'
+              'totalenemyHP: $_totalEnemyHP\n'
+              'enemyAsset: $_currentEnemyAssetPath\n'
+              'background: $_currentBackground\n'
+              'enemyLevel: $_currentEnemyLevel\n'
+              'enemyHurt: $_EnemyHurt\n'
+              'currentMusic: $_currentMusic\n'
+              'gameFinished: $gameFinished\n'
+              'easyQuestionCount: $easyQuestionCount\n'
+              'mediumQuestionCount: $mediumQuestionCount\n'
+              'hardQuestionCount: $hardQuestionCount\n'
               'Character: ${widget.selectedCharacter}\n'
-              'Q-table: $Q');
+              'Used Easy Questions: $_usedEasyQuestionIndices\n'
+              'Used Medium Questions: $_usedMediumQuestionIndices\n'
+              'Used Hard Questions: $_usedHardQuestionIndices\n'
+              'Q-table: $Q\n');
       print('Data saved to file successfully');
-      final savedData = await file.readAsString();
-      print('Content of saveData.txt: $savedData');
     } catch (e) {
       print('Error saving data to file: $e');
     }
@@ -501,13 +550,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       case 0:
         easyQuestionCount++;
         print("Total easy: $easyQuestionCount");
+        print("Total medium: $mediumQuestionCount");
+        print("Total hard: $hardQuestionCount");
         break;
       case 1:
         mediumQuestionCount++;
+        print("Total easy: $easyQuestionCount");
         print("Total medium: $mediumQuestionCount");
+        print("Total hard: $hardQuestionCount");
         break;
       case 2:
         hardQuestionCount++;
+        print("Total easy: $easyQuestionCount");
+        print("Total medium: $mediumQuestionCount");
         print("Total hard: $hardQuestionCount");
         break;
     }
@@ -582,7 +637,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Kudango.png',
             'Normal Enemy 1',
             '100',
-            'Kudango_Hurt.png'
+            'Kudango_Hurt.png',
+            'music_normal1.wav'
           ],
           [
             '1',
@@ -590,7 +646,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Impeach.png',
             'Normal Enemy 2',
             '100',
-            'Impeach_Hurt.png'
+            'Impeach_Hurt.png',
+            'music_normal2.wav'
           ],
           [
             '2',
@@ -598,7 +655,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Desserter.png',
             'Normal Enemy 3',
             '100',
-            'Desserter_Hurt.png'
+            'Desserter_Hurt.png',
+            'music_normal3.wav'
           ],
           [
             '3',
@@ -606,7 +664,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Autognawta.png',
             'Mini Boss 1',
             '150',
-            'Autognawta_Hurt.png'
+            'Autognawta_Hurt.png',
+            'music_miniboss1.wav'
           ],
           //Level 2
           [
@@ -615,7 +674,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Kudango.png',
             'Normal Enemy 4',
             '100',
-            'Kudango_Hurt.png'
+            'Kudango_Hurt.png',
+            'music_normal1.wav'
           ],
           [
             '5',
@@ -623,7 +683,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Impeach.png',
             'Normal Enemy 5',
             '100',
-            'Impeach_Hurt.png'
+            'Impeach_Hurt.png',
+            'music_normal2.wav'
           ],
           [
             '6',
@@ -631,7 +692,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Desserter.png',
             'Normal Enemy 6',
             '100',
-            'Desserter_Hurt.png'
+            'Desserter_Hurt.png',
+            'music_normal3.wav'
           ],
           [
             '7',
@@ -639,7 +701,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Norxnor.png',
             'Mini Boss 2',
             '150',
-            'Norxnor_Hurt.png'
+            'Norxnor_Hurt.png',
+            'music_miniboss2.wav'
           ],
           //Level 3
           [
@@ -648,7 +711,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Kudango.png',
             'Normal Enemy 7',
             '100',
-            'Kudango_Hurt.png'
+            'Kudango_Hurt.png',
+            'music_normal1.wav'
           ],
           [
             '9',
@@ -656,7 +720,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Impeach.png',
             'Normal Enemy 8',
             '100',
-            'Impeach_Hurt.png'
+            'Impeach_Hurt.png',
+            'music_normal2.wav'
           ],
           [
             '10',
@@ -664,7 +729,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Desserter.png',
             'Normal Enemy 9',
             '100',
-            'Desserter_Hurt.png'
+            'Desserter_Hurt.png',
+            'music_normal3.wav'
           ],
           [
             '11',
@@ -672,7 +738,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Buffine.png',
             'Mini Boss 3',
             '150',
-            'Buffine_Hurt.png'
+            'Buffine_Hurt.png',
+            'music_miniboss3.wav'
           ],
           [
             '12',
@@ -680,7 +747,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             'Chairnine.png',
             'Final Boss',
             '200',
-            'Chairnine.png'
+            'Chairnine.png',
+            'music_finalboss.wav'
           ],
           // Add more levels as needed
         ];
@@ -694,7 +762,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _currentEnemyHP = int.parse(currentLevelData[4]);
           _totalEnemyHP = int.parse(currentLevelData[4]);
           _EnemyHurt = currentLevelData[5];
+          _currentMusic = currentLevelData[6];
+          _playMusic(_currentMusic);
         } else {
+          gameFinished = true;
           _timer.cancel(); // Cancel the timer
           Navigator.push(
             context,
@@ -854,347 +925,334 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   //-------------Layout part of the code----------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/$_currentBackground"),
-            fit: BoxFit.cover,
+    return WillPopScope(
+      onWillPop: () async {
+        return false; // This disables back navigation
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("assets/$_currentBackground"),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ElevatedButton(
-                    //   onPressed: () {
-                    //     _saveDataToFile();
-                    //     SystemNavigator.pop(); // This will close the app
-                    //   },
-                    //   style: ElevatedButton.styleFrom(
-                    //     primary: Colors
-                    //         .red, // Customize the button color as you like
-                    //     onPrimary: Colors.white,
-                    //   ),
-                    //   child: const Text(
-                    //     'Close Game',
-                    //     style: TextStyle(
-                    //       fontFamily: 'Silkscreen',
-                    //     ),
-                    //   ),
-                    // ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Image.asset(
-                            'assets/HP_Banner.png',
-                            fit: BoxFit.cover,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: EdgeInsets.only(left: 50.0),
-                                  child: Text(
-                                    _currentEnemyLevel,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Silkscreen',
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '$_currentEnemyHP / $_totalEnemyHP',
-                                style: TextStyle(
-                                  fontFamily: 'Silkscreen',
-                                  color: Colors.red,
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Expanded(
-                    //   child: ElevatedButton(
-                    //     onPressed: () {
-                    //       Navigator.push(
-                    //         context,
-                    //         MaterialPageRoute(
-                    //           builder: (context) => LeaderboardScreen(
-                    //             correctAnswerCount: _correctAnswerCount,
-                    //           ),
-                    //         ),
-                    //       );
-                    //     },
-                    //     style: ElevatedButton.styleFrom(
-                    //       primary: Colors
-                    //           .blue, // Customize the button color as you like
-                    //       onPrimary: Colors.white,
-                    //     ),
-                    //     child: const Text(
-                    //       'Leaderboard',
-                    //       style: TextStyle(
-                    //         fontFamily: 'Silkscreen',
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: Colors.black,
-                                  width: 2.0,
-                                ),
-                              ),
-                              margin: const EdgeInsets.all(10.0),
-                              alignment: Alignment.center,
-                              child: Text(
-                                _currentDifficulty.isNotEmpty &&
-                                        _currentDifficulty[0].isNotEmpty
-                                    ? _currentDifficulty[
-                                        _currentEasyQuestionIndex][0][0]
-                                    : 'No question available',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Silkscreen',
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0),
-                      child: Stack(
-                        children: [
-                          // Black text with a slight offset
-                          Text(
-                            'Time: $_remainTime seconds',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontFamily: 'Silkscreen',
-                              foreground: Paint()
-                                ..style = PaintingStyle.stroke
-                                ..strokeWidth =
-                                    2 // Adjust the stroke width as needed
-                                ..color = Colors.black,
-                            ),
-                          ),
-                          // White text over the black text
-                          Text(
-                            'Time: $_remainTime seconds',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontFamily: 'Silkscreen',
-                              shadows: [
-                                // Add a drop shadow
-                                Shadow(
-                                  blurRadius: 20.0,
-                                  color: Colors.black.withOpacity(1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin: EdgeInsets.only(left: 150.0),
-                              child: Image.asset(
-                                _showEnemyHurt
-                                    ? "assets/$_EnemyHurt"
-                                    : "assets/$_currentEnemyAssetPath",
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Image.asset(
-                              'assets/${widget.selectedCharacter}',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(
-                              left: 100.0,
-                              top: 5,
-                            ),
-                            child: Image.asset(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Image.asset(
                               'assets/HP_Banner.png',
                               fit: BoxFit.cover,
                             ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Align(
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(left: 50.0),
+                                    child: Text(
+                                      _currentEnemyLevel,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$_currentEnemyHP / $_totalEnemyHP',
+                                  style: TextStyle(
+                                    fontFamily: 'Silkscreen',
+                                    color: Colors.red,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: Colors.black,
+                                    width: 2.0,
+                                  ),
+                                ),
+                                // Reduced the top and bottom margin to make the distance smaller
+                                margin: const EdgeInsets.fromLTRB(
+                                    10.0, 5.0, 10.0, 5.0),
                                 alignment: Alignment.center,
-                                child: Padding(
-                                  padding: EdgeInsets.only(left: 0.0),
-                                  child: Text(
-                                    'Player',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Silkscreen',
+                                child: Scrollbar(
+                                  thickness:
+                                      5.0, // Adjust the thickness of the scrollbar
+                                  radius: Radius.circular(
+                                      10.0), // Optional: to give the scrollbar rounded corners
+                                  isAlwaysShown: true,
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      _currentDifficulty.isNotEmpty &&
+                                              _currentDifficulty[0].isNotEmpty
+                                          ? _currentDifficulty[
+                                              _currentEasyQuestionIndex][0][0]
+                                          : 'No question available',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 20,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                      maxLines: null,
                                     ),
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 100.0),
-                                child: Text(
-                                  '$_playerHP /  100',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 20,
-                                    fontFamily: 'Silkscreen',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[0]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
                             ),
-                            child: Text(
-                              _options[0][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[1]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[1][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[2]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[2][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => _optionClicked(_options[3]),
-                            style: ElevatedButton.styleFrom(
-                              onPrimary: Colors.black,
-                            ),
-                            child: Text(
-                              _options[3][0],
-                              style: TextStyle(
-                                fontFamily: 'Silkscreen',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _confirmAnswer,
-                      style: ElevatedButton.styleFrom(
-                        primary: Colors.orange,
-                        onPrimary: Colors.black,
-                      ),
-                      child: const Text(
-                        'CONFIRM?',
-                        style: TextStyle(
-                          fontFamily: 'Silkscreen',
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20.0),
+                        child: Stack(
+                          children: [
+                            // Black text with a slight offset
+                            Text(
+                              'Time: $_remainTime seconds',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontFamily: 'Silkscreen',
+                                foreground: Paint()
+                                  ..style = PaintingStyle.stroke
+                                  ..strokeWidth =
+                                      2 // Adjust the stroke width as needed
+                                  ..color = Colors.black,
+                              ),
+                            ),
+                            // White text over the black text
+                            Text(
+                              'Time: $_remainTime seconds',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontFamily: 'Silkscreen',
+                                shadows: [
+                                  // Add a drop shadow
+                                  Shadow(
+                                    blurRadius: 20.0,
+                                    color: Colors.black.withOpacity(1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                margin: EdgeInsets.only(left: 150.0),
+                                child: Image.asset(
+                                  _showEnemyHurt
+                                      ? "assets/$_EnemyHurt"
+                                      : "assets/$_currentEnemyAssetPath",
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: Image.asset(
+                                'assets/${widget.selectedCharacter}',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(
+                                left: 100.0,
+                                top: 5,
+                              ),
+                              child: Image.asset(
+                                'assets/HP_Banner.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Align(
+                                  alignment: Alignment.center,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(left: 0.0),
+                                    child: Text(
+                                      'Player',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Silkscreen',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 100.0),
+                                  child: Text(
+                                    '$_playerHP /  100',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 20,
+                                      fontFamily: 'Silkscreen',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[0]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[0][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[0][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[1]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[1][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[1][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[2]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[2][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[2][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _optionClicked(_options[3]),
+                              style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.black,
+                                primary: _selectedOption?[0] == _options[3][0]
+                                    ? Colors.orange
+                                    : null, // Highlight if selected
+                              ),
+                              child: Text(
+                                _options[3][0],
+                                style: TextStyle(
+                                  fontFamily: 'Silkscreen',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _confirmAnswer,
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.orange,
+                          onPrimary: Colors.black,
+                        ),
+                        child: const Text(
+                          'CONFIRM?',
+                          style: TextStyle(
+                            fontFamily: 'Silkscreen',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
