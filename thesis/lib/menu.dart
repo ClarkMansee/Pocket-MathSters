@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -5,6 +6,7 @@ import 'package:thesis/tutorial.dart';
 import 'main.dart';
 import 'character.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'leaderboard.dart'; // Change this to the actual path of your leaderboard screen file
 
 class MainMenu extends StatefulWidget {
   @override
@@ -14,11 +16,18 @@ class MainMenu extends StatefulWidget {
 class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String selectedCharacter = "";
+  int _overallEasyQuestionCount = 0;
+  int _overallMediumQuestionCount = 0;
+  int _overallHardQuestionCount = 0;
+  List<int> _overallCorrectAnswerCounts = [0, 0, 0];
+  bool gameFinished = false;
+  late Timer _timer;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _audioPlayer.pause();
+      _timer.cancel();
     } else if (state == AppLifecycleState.resumed) {
       _audioPlayer.resume();
     }
@@ -29,6 +38,7 @@ class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _playMusic();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {});
   }
 
   @override
@@ -59,6 +69,20 @@ class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
       for (final line in lines) {
         if (line.startsWith('Character')) {
           selectedCharacter = line.split(': ')[1];
+        } else if (line.startsWith('overallEasyCorrectAnswerCount:')) {
+          _overallCorrectAnswerCounts[0] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallMediumCorrectAnswerCount:')) {
+          _overallCorrectAnswerCounts[1] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallHardCorrectAnswerCount:')) {
+          _overallCorrectAnswerCounts[2] = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallEasyQuestionCount:')) {
+          _overallEasyQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallMediumQuestionCount:')) {
+          _overallMediumQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('overallHardQuestionCount:')) {
+          _overallHardQuestionCount = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('gameFinished:')) {
+          gameFinished = line.split(': ')[1].toLowerCase() == 'true';
         }
       }
     } catch (e) {
@@ -110,23 +134,37 @@ class _MainMenuState extends State<MainMenu> with WidgetsBindingObserver {
                   await _audioPlayer
                       .pause(); // Pause the audio before navigating
                   await _readDataFromFile(); // Call the readData function
-                  if (selectedCharacter == null || selectedCharacter == "") {
+                  if (gameFinished) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CharacterSelectionPage(),
-                      ),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MyHomePage(
-                          selectedCharacter: selectedCharacter,
-                          title: 'My Home Page',
+                        builder: (context) => LeaderboardScreen(
+                          correctAnswerCounts: _overallCorrectAnswerCounts,
+                          totalEasyQuestions: _overallEasyQuestionCount,
+                          totalMediumQuestions: _overallMediumQuestionCount,
+                          totalHardQuestions: _overallHardQuestionCount,
                         ),
                       ),
                     );
+                  } else {
+                    if (selectedCharacter == null || selectedCharacter == "") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CharacterSelectionPage(),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyHomePage(
+                            selectedCharacter: selectedCharacter,
+                            title: 'My Home Page',
+                          ),
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(

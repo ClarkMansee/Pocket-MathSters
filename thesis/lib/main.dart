@@ -57,6 +57,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   String selectedCharacter = "";
   bool _hasReadDataFromFile = false;
+  bool gameFinished = false;
 
   int _playerHP = 100;
   int _levelNum = 0; // New variable to keep track of the level
@@ -81,7 +82,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   //Initial difficulty
   int difficulty = 0;
-  int knnDifficulty = 0;
 
   List<List<String>> _options = [];
   List<String>? _selectedOption;
@@ -153,6 +153,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       _audioPlayer.pause();
       _saveDataToFile();
+      _timer.cancel(); // Pause the timer
     }
   }
 
@@ -172,62 +173,40 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       final savedData = await file.readAsString();
       print('Content of saveData.txt: $savedData');
 
-      // if (savedData != null && savedData != "") {
-      //   _overallCorrectAnswerCounts = [];
-      // }
       // Parse the saved data and update variables
       final lines = savedData.split('\n');
       for (final line in lines) {
         if (line.startsWith('Easy Correct answers:')) {
-          print("WONGW1");
           _correctAnswerCounts[0] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Medium Correct answers:')) {
-          print("WONGW2");
           _correctAnswerCounts[1] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('Hard Correct answers:')) {
-          print("WONGW3");
           _correctAnswerCounts[2] = int.parse(line.split(': ')[1]);
-          print(_correctAnswerCounts);
         } else if (line.startsWith('Level:')) {
-          print("WONGW7");
           _levelNum = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('enemyHP:')) {
-          print("WONGW8");
           _currentEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('playerHP:')) {
-          print("WONGW9");
           _playerHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('totalenemyHP:')) {
-          print("WONGW10");
           _totalEnemyHP = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('enemyAsset:')) {
-          print("WONGW11");
           _currentEnemyAssetPath = line.split(': ')[1];
         } else if (line.startsWith('background:')) {
-          print("WONGW12");
           _currentBackground = line.split(': ')[1];
         } else if (line.startsWith('enemyLevel:')) {
-          print("WONGW13");
           _currentEnemyLevel = line.split(': ')[1];
         } else if (line.startsWith('enemyHurt:')) {
-          print("WONGW14");
           _EnemyHurt = line.split(': ')[1];
         } else if (line.startsWith('currentMusic:')) {
-          print("tite100");
           _currentMusic = line.split(': ')[1];
         } else if (line.startsWith('overallEasyCorrectAnswerCount:')) {
-          print("WONGW15");
           _overallCorrectAnswerCounts[0] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('overallMediumCorrectAnswerCount:')) {
-          print("WONGW16");
           _overallCorrectAnswerCounts[1] = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('overallHardCorrectAnswerCount:')) {
-          print("WONGW17");
           _overallCorrectAnswerCounts[2] = int.parse(line.split(': ')[1]);
-          print(_overallCorrectAnswerCounts);
         } else if (line.startsWith('overallEasyQuestionCount:')) {
-          print("tite");
-          print(int.parse(line.split(': ')[1]));
           _overallEasyQuestionCount = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('overallMediumQuestionCount:')) {
           _overallMediumQuestionCount = int.parse(line.split(': ')[1]);
@@ -235,8 +214,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           _overallHardQuestionCount = int.parse(line.split(': ')[1]);
         } else if (line.startsWith('difficulty:')) {
           difficulty = int.parse(line.split(': ')[1]);
+        } else if (line.startsWith('gameFinished:')) {
+          gameFinished = line.split(': ')[1].toLowerCase() == 'true';
         } else if (line.startsWith('Used Easy Questions:')) {
-          print("WONGW4");
           _usedEasyQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -246,7 +226,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .map(int.parse),
           );
         } else if (line.startsWith('Used Medium Questions:')) {
-          print("WONGW5");
           _usedMediumQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -256,7 +235,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .map(int.parse),
           );
         } else if (line.startsWith('Used Hard Questions:')) {
-          print("WONGW6");
           _usedHardQuestionIndices.addAll(
             line
                 .split(': ')[1]
@@ -266,10 +244,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 .map(int.parse),
           );
         }
-        print("overall correct answer: $_overallCorrectAnswerCounts");
-        print("overall easy correct answer: $_overallEasyQuestionCount");
-        print("overall medium correct answer: $_overallMediumQuestionCount");
-        print("overall hard correct answer: $_overallHardQuestionCount");
       }
     } catch (e) {
       print("ngek di gumana yung pag read, may error ata");
@@ -319,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _hardDifficulties = hard;
 
     setState(() {
-      _randomizeDifficulty(knnDifficulty);
+      _randomizeDifficulty(difficulty);
     });
   }
 
@@ -349,6 +323,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           'overallMediumQuestionCount: $_overallMediumQuestionCount\n'
           'overallHardQuestionCount: $_overallHardQuestionCount\n'
           'difficulty: $difficulty\n'
+          'gameFinished: $gameFinished\n'
           'Used Easy Questions: $_usedEasyQuestionIndices\n'
           'Used Medium Questions: $_usedMediumQuestionIndices\n'
           'Used Hard Questions: $_usedHardQuestionIndices\n');
@@ -490,10 +465,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       int previousLevelTotalQuestions = currentTotalQuestions;
       int previousLevelCorrectAnswers = currentCorrectAnswers;
 
-      int knnDifficulty =
+      int difficulty =
           await knn(previousLevelTotalQuestions, previousLevelCorrectAnswers);
 
-      print("difficulty predicted by KNN is: $knnDifficulty");
+      print("difficulty predicted KNN is: $difficulty");
       print("previous level total question: $previousLevelTotalQuestions");
       print(
           "previous level total correct answers $previousLevelCorrectAnswers");
@@ -642,6 +617,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         _currentMusic = currentLevelData[6];
         _playMusic(_currentMusic);
       } else {
+        gameFinished = true;
         _currentQuestionIndex++;
         _timer.cancel(); // Cancel the timer
         Navigator.push(
@@ -658,7 +634,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       }
       print("Current Level: ${_levelNum + 1}");
       setState(() {
-        _randomizeDifficulty(knnDifficulty);
+        _randomizeDifficulty(difficulty);
       });
     } else {
       setState(() {
@@ -736,7 +712,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty(knnDifficulty);
+          _randomizeDifficulty(difficulty);
         }
         break;
       case 1:
@@ -747,7 +723,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty(knnDifficulty);
+          _randomizeDifficulty(difficulty);
         }
         break;
       case 2:
@@ -758,7 +734,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           }
           _currentEasyQuestionIndex = newIndex;
         } else {
-          _randomizeDifficulty(knnDifficulty);
+          _randomizeDifficulty(difficulty);
         }
         break;
       default:

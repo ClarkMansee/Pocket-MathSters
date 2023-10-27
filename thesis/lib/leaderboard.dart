@@ -1,19 +1,56 @@
+import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends StatefulWidget {
   final List<int> correctAnswerCounts;
   final int totalEasyQuestions;
   final int totalMediumQuestions;
   final int totalHardQuestions;
 
-  const LeaderboardScreen(
-      {Key? key,
-      required this.correctAnswerCounts,
-      required this.totalEasyQuestions,
-      required this.totalMediumQuestions,
-      required this.totalHardQuestions})
-      : super(key: key);
+  const LeaderboardScreen({
+    Key? key,
+    required this.correctAnswerCounts,
+    required this.totalEasyQuestions,
+    required this.totalMediumQuestions,
+    required this.totalHardQuestions,
+  }) : super(key: key);
+
+  @override
+  _LeaderboardScreenState createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen>
+    with WidgetsBindingObserver {
+  late AudioPlayer
+      _audioPlayer; // Assuming AudioPlayer is the type of your audio player
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _audioPlayer = AudioPlayer();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {});
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _audioPlayer.dispose();
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _audioPlayer.pause();
+      _timer.cancel();
+      print("audio and timer is stopped");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +182,7 @@ class LeaderboardScreen extends StatelessWidget {
                                     MainAxisAlignment.spaceAround,
                                 children: [
                                   Text(
-                                    '${correctAnswerCounts[0]} / $totalEasyQuestions', // Display correctAnswerCounts[0]
+                                    '${widget.correctAnswerCounts[0]} / ${widget.totalEasyQuestions}', // Display correctAnswerCounts[0]
                                     style: const TextStyle(
                                       fontSize: 25,
                                       fontFamily: 'Silkscreen',
@@ -153,7 +190,7 @@ class LeaderboardScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${correctAnswerCounts[1]} / $totalMediumQuestions', // Display correctAnswerCounts[1]
+                                    '${widget.correctAnswerCounts[1]} / ${widget.totalMediumQuestions}', // Display correctAnswerCounts[1]
                                     style: const TextStyle(
                                       fontSize: 25,
                                       fontFamily: 'Silkscreen',
@@ -161,7 +198,7 @@ class LeaderboardScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${correctAnswerCounts[2]} / $totalHardQuestions', // Display correctAnswerCounts[2]
+                                    '${widget.correctAnswerCounts[2]} / ${widget.totalHardQuestions}', // Display correctAnswerCounts[2]
                                     style: const TextStyle(
                                       fontSize: 25,
                                       fontFamily: 'Silkscreen',
